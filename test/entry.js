@@ -1,10 +1,7 @@
-var chai = require('chai')
-  , _ = require('lodash')
-  , expect = chai.expect
-  , Entry = require('../lib/entry')
-  , EntryAddenda = require('../lib/entry-addenda')
-  , Batch = require('../lib/batch')
-  , File = require('../lib/file');
+const chai = require('chai');
+const expect = chai.expect;
+const Entry = require('../lib/entry');
+const EntryAddenda = require('../lib/entry-addenda');
 
 describe('Entry', function() {
   describe('Create Entry', function() {

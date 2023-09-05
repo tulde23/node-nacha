@@ -1,7 +1,6 @@
-var chai = require('chai')
-  , _ = require('lodash')
-  , expect = chai.expect
-  , File = require('../lib/file');
+const chai = require('chai');
+const expect = chai.expect;
+const File = require('../lib/file');
 
 describe('Parse', function() {
   describe('Validate', function() {

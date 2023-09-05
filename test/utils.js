@@ -1,6 +1,6 @@
-var chai = require('chai'),
-  expect = chai.expect,
-  moment = require('moment');
+const chai = require('chai');
+const expect = chai.expect;
+const moment = require('moment');
 
 describe('Utils', function() {
 

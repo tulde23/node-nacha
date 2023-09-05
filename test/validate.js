@@ -1,12 +1,13 @@
-var chai = require('chai')
-  , _ = require('lodash')
-  , expect = chai.expect
-  , validate = require('../lib/validate');
+const chai = require('chai');
+const _ = require('lodash');
+const expect = chai.expect;
+const validate = require('../lib/validate');
+const { validateRequiredFields, validateLengths, validateDataTypes, validateACHCode, validateACHServiceClassCode, validateRoutingNumber } = validate;
 
 describe('Validate', function() {
   describe('Required Fields', function() {
     it('must have contents or an error is thrown', function() {
-      var testObjectOne = {
+      const testObjectOne = {
         fieldOne: {
           name: 'fieldOne',
           width: 6,
@@ -18,17 +19,15 @@ describe('Validate', function() {
       };
 
       // The function should throw an error since the field is required but the value is '' (empty string)
-      expect(function() {
-        validate.validateRequiredFields(testObjectOne)
-      }).to.throw('fieldOne is a required field but its value is: ');
+      expect(() => validateRequiredFields(testObjectOne))
+        .to.throw('fieldOne is a required field but its value is: ');
 
       // Change the value to a valid alphanumeric string
       testObjectOne.fieldOne.value = 'some value';
 
       // Make sure the function doesn't throw an error.
-      expect(function() {
-        validate.validateRequiredFields(testObjectOne)
-      }).not.to.throw('fieldOne is a required field but its value is: ');
+      expect(() => validateRequiredFields(testObjectOne))
+        .not.to.throw('fieldOne is a required field but its value is: ');
     });
   });
 
@@ -166,18 +165,18 @@ describe('Validate', function() {
 
   describe('Transaction Codes', function() {
     it('must be valid ACH codes', function() {
-      var validTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39']
-        , invalidTransactionCodes = ['21', '25', '26', '15', '82', '30', '31', '35', '36', '73', '18', '40'];
+      const validTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39'];
+      const invalidTransactionCodes = ['21', '25', '26', '15', '82', '30', '31', '35', '36', '73', '18', '40'];
 
       // The function should not throw an error since all codes in the `validTransactionCodes` array are valid ACH transaction codes.
-      _.forEach(validTransactionCodes, function(code) {
+      validTransactionCodes.forEach((code) => {
         expect(function() {
           validate.validateACHCode(code)
         }).not.to.throw('The ACH transaction code ' + code + ' is invalid. Please pass a valid 2-digit transaction code.');
       });
 
       // Now we should expect errors since we're passing an array of invalid transaction codes.
-      _.forEach(invalidTransactionCodes, function(code) {
+      invalidTransactionCodes.forEach((code) => {
         expect(function() {
           validate.validateACHCode(code)
         }).to.throw('The ACH transaction code ' + code + ' is invalid. Please pass a valid 2-digit transaction code.');
