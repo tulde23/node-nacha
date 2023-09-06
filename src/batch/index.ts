@@ -1,14 +1,14 @@
 // Batch
 import moment from 'moment';
-import { BatchControls, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from '../Types.js';
+import type { BatchControls, BatchHeaders, BatchOptions } from '../Types.js';
 import { computeCheckDigit, formatDate, generateString, newLineChar, overrideLowLevel } from './../utils';
 import { validateACHServiceClassCode, validateDataTypes, validateLengths, validateRequiredFields, validateRoutingNumber } from './../validate';
 import { control } from './control';
 import { header } from './header';
-import { Entry } from '../entry/index.js';
+import Entry from '../entry/index.js';
+import { highLevelHeaderOverrides, highLevelControlOverrides } from '../overrides.js';
 
-const highLevelHeaderOverrides: Array<HighLevelHeaderOverrides> = ['serviceClassCode', 'companyDiscretionaryData', 'companyIdentification', 'standardEntryClassCode'];
-const highLevelControlOverrides: Array<HighLevelControlOverrides> = ['addendaCount', 'entryHash', 'totalDebit', 'totalCredit'];
+
 
 export default class Batch {
   _entries: Array<Entry> = [];

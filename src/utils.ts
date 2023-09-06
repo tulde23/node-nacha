@@ -1,6 +1,8 @@
-import { BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from './Types.js';
+import { BatchOptions, EntryOptions, HighLevelControlOverrides, HighLevelFieldOverrides, HighLevelHeaderOverrides } from './Types.js';
 import Batch from './batch/index.js';
+import Entry from './entry/index.js';
 import nACHError from './error';
+import { highLevelControlOverrideSet, highLevelFieldOverrideSet, highLevelHeaderOverrideSet } from './overrides.js';
 let counter = 0;
 
 // Pad a given string to a fixed width using any character or number (defaults to one blank space)
@@ -76,18 +78,73 @@ export function parseLine(str: string, object: Record<string, { width: number; }
  }, {});
 }
 
-export function unique() { return counter++; }
+export function compareSets(set1: Set<string>, set2: Set<string>) {
+  if (set1.size !== set2.size) return false;
 
-type HighLevelOverrides = HighLevelHeaderOverrides|HighLevelControlOverrides;
+  for (const item of set1) {
+    if (!set2.has(item)) return false;
+  }
 
-export function overrideLowLevel<Keys extends Array<HighLevelOverrides> = Array<HighLevelOverrides>>(values: Keys, options: BatchOptions, self: Batch) {
-  // For each override value, check to see if it exists on the options object & if so, set it
-  values.forEach((field) => {
-    if (options[field]) {
-      self.set(field, options[field]);
-    }
-  });
+  return true;
 }
+
+type BatchOverrides = Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>
+
+function isBatchOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>): arg is BatchOverrides {
+  return compareSets(new Set(arg), highLevelHeaderOverrideSet) || compareSets(new Set(arg), highLevelControlOverrideSet);
+}
+
+function isBatchOptions(arg: BatchOptions|EntryOptions): arg is BatchOptions {
+  if (typeof arg !== 'object') return false;
+  if (Object.keys(arg).length === 0) return false;
+  if ('header' in arg && 'control' in arg && 'originatingDFI' in arg) return true;
+
+  return false;
+}
+
+function isEntryOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>): arg is Array<HighLevelFieldOverrides> {
+  return compareSets(new Set(arg), highLevelFieldOverrideSet);
+}
+
+function isEntryOptions(arg: BatchOptions|EntryOptions): arg is EntryOptions {
+  if (typeof arg !== 'object') return false;
+  if (Object.keys(arg).length === 0) return false;
+  if ('fields' in arg) return true;
+
+  return false;
+}
+
+export function overrideLowLevel(values: BatchOverrides, options: BatchOptions, self: Batch): void
+export function overrideLowLevel(values: Array<HighLevelFieldOverrides>, options: EntryOptions, self: Entry): void
+export function overrideLowLevel(
+  values: BatchOverrides|Array<HighLevelFieldOverrides>,
+  options: BatchOptions|EntryOptions,
+  self: Batch|Entry
+): void {
+  if (!Array.isArray(values)) throw new Error('overrideLowLevel() requires an array of values to override');
+  if (typeof options !== 'object') throw new Error('overrideLowLevel() requires an object of options to override');
+  if (typeof self !== 'object') throw new Error('overrideLowLevel() requires an object to override');
+
+  if (values.length === 0) return;
+  if (Object.keys(options).length === 0) return;
+  if (Object.keys(self).length === 0) return;
+
+  if (isBatchOverrides(values) && isBatchOptions(options) && self instanceof Batch) {
+    // For each override value, check to see if it exists on the options object & if so, set it
+    values.forEach((field) => {
+      if (options[field]) self.set(field, options[field] as string|number);
+    });
+  }
+  
+  if (isEntryOverrides(values) && isEntryOptions(options) && self instanceof Entry) {
+    // For each override value, check to see if it exists on the options object & if so, set it
+    values.forEach((field) => {
+      if (options[field]) self.set(field, options[field] as string);
+    });
+  }
+}
+
+export function unique() { return counter++; }
 
 export function getNextMultiple(value: number, multiple: number) {
   return value % multiple == 0 ? value : value + (multiple - value % multiple);

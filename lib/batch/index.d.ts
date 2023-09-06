@@ -1,7 +1,7 @@
-import { BatchControls, BatchHeaders, BatchOptions } from '../Types.js';
+import type { BatchControls, BatchHeaders, BatchOptions } from '../Types.js';
 import { control } from './control';
 import { header } from './header';
-import { Entry } from '../entry/index.js';
+import Entry from '../entry/index.js';
 export default class Batch {
     _entries: Array<Entry>;
     header: BatchHeaders;

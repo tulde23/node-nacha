@@ -1,5 +1,6 @@
+import { fields } from './fields.js';
 import { EntryFields, EntryOptions } from '../Types.js';
-export declare class Entry {
+export default class Entry {
     _addendas: never[];
     fields: EntryFields;
     constructor(options: EntryOptions, autoValidate: boolean);
@@ -13,6 +14,6 @@ export declare class Entry {
         (arg0: string): void;
     }): void;
     _validate(): void;
-    get(category: string): any;
-    set(category: string, value: string): void;
+    get<Field extends keyof typeof fields = keyof typeof fields>(category: Field): this['fields'][Field]['value'];
+    set<Field extends keyof typeof fields = keyof typeof fields>(category: Field, value: string): void;
 }

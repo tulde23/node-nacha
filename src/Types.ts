@@ -1,3 +1,4 @@
+
 type CamelToTitleCase<Text extends string, $Acc extends string = ''> =
   Text extends `${infer $Ch}${infer $Rest}`
     ? Text extends Capitalize<Text>
@@ -15,7 +16,7 @@ export type HighLevelHeaderOverrides = 'serviceClassCode'|'companyDiscretionaryD
 
 type BaseFieldParams = { width: number; position: number; required: boolean; type: 'numeric'|'alphanumeric'|'alpha'; }
 
-export type BatchHeaderField<Key extends BatchHeaderKeys = BatchHeaderKeys> = { name: CamelToTitleCase<Key>; value: number|string; } & BaseFieldParams;
+export type BatchHeaderField<Key extends BatchHeaderKeys = BatchHeaderKeys> = { name: CamelToTitleCase<Key>; value: Key extends 'serviceClassCode' ? `${number}` : number|string; } & BaseFieldParams;
 export type BatchHeaderFieldWithBlank<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderField<Key> & { blank: boolean; };
 
 export type BatchControlKeys = 'recordTypeCode'|'serviceClassCode'|'addendaCount'|'entryHash'|'totalDebit'|'totalCredit'|'companyIdentification'|'messageAuthenticationCode'|'reserved'|'originatingDFI' | 'batchNumber';
@@ -43,7 +44,7 @@ export type BatchControls = {
   [key in BatchControlKeysWithBlankFields]: BatchControlFieldWithBlank<key>;
 };
 
-export interface BatchOptions {
+export type BatchOptions = {
   header: BatchHeaders;
   control: BatchControls;
   originatingDFI: `${number}`;
@@ -51,33 +52,42 @@ export interface BatchOptions {
   companyEntryDescription?: string;
   companyDescriptiveDate?: string;
   effectiveEntryDate?: string | Date;
-}
+} & Record<HighLevelHeaderOverrides, string|number|undefined> & Record<HighLevelControlOverrides, string|number|undefined>;
 
 export type EntryFieldKeys = 'recordTypeCode'|'transactionCode'|'receivingDFI'|'checkDigit'|'DFIAccount'|'amount'|'idNumber'|'individualName'|'discretionaryData'|'addendaId'|'traceNumber';
-export type EntryFieldKeysCommon = Exclude<EntryFieldKeys, 'transactionCode'|'traceNumber'>;
-export type EntryFieldKeysWithNoValue = Extract<EntryFieldKeys, 'transactionCode'>;
+export type EntryFieldKeysWithStringValue = Exclude<EntryFieldKeys, 'transactionCode'|'traceNumber'|'receivingDFI'|'checkDigit'|'amount'>;
+export type EntryFieldKeysWithNumberValue = Extract<EntryFieldKeys, 'amount'>;
+export type EntryFieldKeysWithNumberStringValue = Extract<EntryFieldKeys, 'receivingDFI'|'checkDigit'>;
+export type EntryFieldKeysWithOptionalValue = Extract<EntryFieldKeys, 'transactionCode'>;
 export type EntryFieldKeysWithBlank = Extract<EntryFieldKeys, 'traceNumber'>;
 
 export type HighLevelFieldOverrides = 'transactionCode'|'receivingDFI'|'checkDigit'|'DFIAccount'|'amount'|'idNumber'|'individualName'|'discretionaryData'|'addendaId'|'traceNumber';
 
-export type EntryField<Key extends EntryFieldKeys = EntryFieldKeys> = { name: CamelToTitleCase<Key>, number?: boolean, value: number|string; } & BaseFieldParams;
-export type EntryFieldWithNoValue<Key extends EntryFieldKeys = EntryFieldKeys> = { name: CamelToTitleCase<Key>, number?: boolean, value?: number|string } & BaseFieldParams;
-export type EntryFieldWithBlank<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { blank: boolean; };
+type EntryField<Key extends EntryFieldKeys = EntryFieldKeys> = { name: CamelToTitleCase<Key>, number?: boolean  } & BaseFieldParams;
+export type EntryFieldWithStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: string; } & BaseFieldParams
+export type EntryFieldWithNumberValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: number } & BaseFieldParams;
+export type EntryFieldWithNumberStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: `${number}` } & BaseFieldParams;
+export type EntryFieldWithOptionalValue<Key extends EntryFieldKeys = EntryFieldKeys> = { name: CamelToTitleCase<Key>, number?: boolean, value?: `${number}` } & BaseFieldParams;
+export type EntryFieldWithBlank<Key extends EntryFieldKeys = EntryFieldKeys> = EntryFieldWithNumberValue<Key> & { value: number, blank: boolean; } & BaseFieldParams;
 
 export type EntryFields = {
-  [key in EntryFieldKeysCommon]: EntryField<key>;
+  [key in EntryFieldKeysWithStringValue]: EntryFieldWithStringValue<key>;
 } & {
-  [key in EntryFieldKeysWithNoValue]: EntryFieldWithNoValue<key>;
+  [key in EntryFieldKeysWithNumberValue]: EntryFieldWithNumberValue<key>;
+} & {
+  [key in EntryFieldKeysWithNumberStringValue]: EntryFieldWithNumberStringValue<key>;
+} & {
+  [key in EntryFieldKeysWithOptionalValue]: EntryFieldWithOptionalValue<key>;
 } & {
   [key in EntryFieldKeysWithBlank]: EntryFieldWithBlank<key>;
 };
 
 export type EntryOptions = {
   fields: EntryFields;
-  receivingDFI: string | number;
-  DFIAccount: string | any[];
-  amount: any;
-  idNumber: any;
-  individualName: string | any[];
-  discretionaryData: any;
-}
+  receivingDFI: `${number}`;
+  DFIAccount: string;
+  amount: string;
+  idNumber: string;
+  individualName: string;
+  discretionaryData: string;
+} & Record<HighLevelFieldOverrides, string|undefined>;

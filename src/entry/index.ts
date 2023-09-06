@@ -2,7 +2,7 @@
 
 import _ from 'lodash';
 import async from 'async';
-import { computeCheckDigit } from './../utils';
+import { computeCheckDigit, generateString, overrideLowLevel } from './../utils';
 import {
   validateRoutingNumber,
   validateRequiredFields,
@@ -12,11 +12,10 @@ import {
   validateACHAddendaCode
 } from './../validate';
 import { fields } from './fields.js';
-import { EntryFields, EntryOptions, HighLevelFieldOverrides } from '../Types.js';
-
-const highLevelOverrides: Array<HighLevelFieldOverrides> = ['transactionCode', 'receivingDFI', 'checkDigit', 'DFIAccount', 'amount', 'idNumber', 'individualName', 'discretionaryData', 'addendaId', 'traceNumber'];
-
-export class Entry {
+import { EntryFields, EntryOptions } from '../Types.js';
+import { highLevelFieldOverrides } from '../overrides.js';
+import nACHError from '../error.js';
+export default class Entry {
   _addendas = [];
   fields: EntryFields
 
@@ -27,12 +26,12 @@ export class Entry {
       : {...fields };
 
     // Set our high-level values
-    overrideLowLevel(highLevelOverrides, options, this);
+    overrideLowLevel(highLevelFieldOverrides, options, this);
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.receivingDFI) {
-      this.fields.receivingDFI.value = computeCheckDigit(options.receivingDFI).slice(0, -1);
-      this.fields.checkDigit.value = computeCheckDigit(options.receivingDFI).slice(-1);
+      this.fields.receivingDFI.value = computeCheckDigit(options.receivingDFI).slice(0, -1) as `${number}`;
+      this.fields.checkDigit.value = computeCheckDigit(options.receivingDFI).slice(-1) as `${number}`;
     }
 
     if (options.DFIAccount) {
@@ -66,7 +65,7 @@ export class Entry {
     // Add indicator to Entry record
     this.set('addendaId', '1');
   
-    // Set corresponding feilds on Addenda
+    // Set corresponding fields on Addenda
     entryAddenda.set('addendaSequenceNumber', this._addendas.length + 1);
     entryAddenda.set('entryDetailSequenceNumber', this.get('traceNumber'));
   
@@ -95,15 +94,24 @@ export class Entry {
     // Validate required fields
     validateRequiredFields(this.fields);
   
-    // Validate the ACH code passed is actually valid
+    // Validate the ACH code passed
     if (this.fields.addendaId.value == '0') {
-      validateACHCode(this.fields.transactionCode.value);
+      if (this.fields.transactionCode.value){
+        validateACHCode(this.fields.transactionCode.value);
+      } else {
+        throw new nACHError({
+          name: 'ACH Transaction Code Error',
+          message: `The ACH transaction code must be provided when addenda ID === '0'. Please pass a valid 2-digit transaction code.`
+        });
+      }
     } else {
-      validateACHAddendaCode(this.fields.transactionCode.value);
+      if (this.fields.transactionCode.value){
+        validateACHAddendaCode(this.fields.transactionCode.value);
+      }
     }
   
     // Validate the routing number
-    validateRoutingNumber(this.fields.receivingDFI.value + this.fields.checkDigit.value);
+    validateRoutingNumber(Number(this.fields.receivingDFI.value) + Number(this.fields.checkDigit.value));
   
     // Validate header field lengths
     validateLengths(this.fields);
@@ -112,18 +120,14 @@ export class Entry {
     validateDataTypes(this.fields);
   }
 
-  get(category: string) {
+  get<Field extends keyof typeof fields = keyof typeof fields>(category: Field): this['fields'][Field]['value'] {
     // If the header has it, return that (header takes priority)
-    if (this.fields[category]) {
-      return this.fields[category]['value'];
-    }
+    if (this.fields[category]) return this.fields[category].value;
   }
 
-  set(category: string, value: string) {
+  set<Field extends keyof typeof fields = keyof typeof fields>(category: Field, value: string) {
     // If the header has the field, set the value
-    if (this.fields[category]) {
-      this.fields[category]['value'] = value;
-    }
+    if (this.fields[category]) this.fields[category]['value'] = value;
   }
 }
 

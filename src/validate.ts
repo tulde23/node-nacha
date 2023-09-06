@@ -108,7 +108,7 @@ export function validateACHAddendaCode(transactionCode: NumericalString) {
   // }
 
   return true;
-}
+} //? WTF is this function for?
 
 export function validateACHServiceClassCode(serviceClassCode: NumericalString) {
   if (serviceClassCode.length !== 3 || ACHServiceClassCodes.includes(serviceClassCode) === false) {
