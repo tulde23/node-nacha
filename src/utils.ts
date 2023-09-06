@@ -1,9 +1,11 @@
 import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions } from './batch/batchTypes.js';
 import Batch from './batch/index.js';
+import { EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
+import EntryAddenda from './entry-addenda/index.js';
 import type { HighLevelFieldOverrides, EntryOptions } from './entry/entryTypes.js';
 import Entry from './entry/index.js';
 import nACHError from './error';
-import { highLevelControlOverrideSet, highLevelFieldOverrideSet, highLevelHeaderOverrideSet } from './overrides.js';
+import { highLevelAddendaFieldOverrideSet, highLevelControlOverrideSet, highLevelFieldOverrideSet, highLevelHeaderOverrideSet } from './overrides.js';
 let counter = 0;
 
 // Pad a given string to a fixed width using any character or number (defaults to one blank space)
@@ -33,13 +35,15 @@ export function computeCheckDigit(routing: `${number}`|number): `${number}` {
 }
 
 // This function is passed a field and a regex and tests the field's value property against the given regex
-export function testRegex(regex: RegExp, field: { number: number|string; value: string; name: string; type: string; }) {
-  const string = field.number ? parseFloat(field.value).toFixed(2).replace(/\./, '') : field.value;
+export function testRegex(regex: RegExp, field: { number?: boolean; value: unknown; name: string; type: string; }) {
+  const string: string = field.number
+  ? parseFloat(field.value as string).toFixed(2).replace(/\./, '')
+  : field.value as string;
 
   if (!regex.test(string)) {
     throw new nACHError({
       name: 'Invalid Data Type',
-      message: field.name + '\'s data type is required to be ' + field.type + ', but its contents don\'t reflect that.'
+      message: `${field.name}'s data type is required to be ${field.type}, but its contents don't reflect that.`
     });
   }
 
@@ -91,12 +95,12 @@ export function compareSets(set1: Set<string>, set2: Set<string>) {
 
 type BatchOverrides = Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>
 
-function isBatchOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>): arg is BatchOverrides {
+function isBatchOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is BatchOverrides {
   return compareSets(new Set(arg), highLevelHeaderOverrideSet)
       || compareSets(new Set(arg), highLevelControlOverrideSet);
 }
 
-function isBatchOptions(arg: BatchOptions|EntryOptions): arg is BatchOptions {
+function isBatchOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is BatchOptions {
   if (typeof arg !== 'object') return false;
   if (Object.keys(arg).length === 0) return false;
   if ('header' in arg && 'control' in arg && 'originatingDFI' in arg) return true;
@@ -104,11 +108,25 @@ function isBatchOptions(arg: BatchOptions|EntryOptions): arg is BatchOptions {
   return false;
 }
 
-function isEntryOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>): arg is Array<HighLevelFieldOverrides> {
+function isEntryOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelFieldOverrides> {
   return compareSets(new Set(arg), highLevelFieldOverrideSet);
 }
 
-function isEntryOptions(arg: BatchOptions|EntryOptions): arg is EntryOptions {
+function isEntryOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryOptions {
+  if (typeof arg !== 'object') return false;
+  if (Object.keys(arg).length === 0) return false;
+  if ('fields' in arg){
+    if ('amount' in arg.fields) return true;
+  }
+
+  return false;
+}
+
+function isEntryAddendaOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelAddendaFieldOverrides> {
+  return compareSets(new Set(arg), highLevelAddendaFieldOverrideSet);
+}
+
+function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryAddendaOptions {
   if (typeof arg !== 'object') return false;
   if (Object.keys(arg).length === 0) return false;
   if ('fields' in arg) return true;
@@ -118,10 +136,11 @@ function isEntryOptions(arg: BatchOptions|EntryOptions): arg is EntryOptions {
 
 export function overrideLowLevel(values: BatchOverrides, options: BatchOptions, self: Batch): void
 export function overrideLowLevel(values: Array<HighLevelFieldOverrides>, options: EntryOptions, self: Entry): void
+export function overrideLowLevel(values: Array<HighLevelAddendaFieldOverrides>, options: EntryAddendaOptions, self: EntryAddenda): void
 export function overrideLowLevel(
-  values: BatchOverrides|Array<HighLevelFieldOverrides>,
-  options: BatchOptions|EntryOptions,
-  self: Batch|Entry
+  values: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>,
+  options: BatchOptions|EntryOptions|EntryAddendaOptions,
+  self: Batch|Entry|EntryAddenda
 ): void {
   if (!Array.isArray(values)) throw new Error('overrideLowLevel() requires an array of values to override');
   if (typeof options !== 'object') throw new Error('overrideLowLevel() requires an object of options to override');
@@ -139,7 +158,12 @@ export function overrideLowLevel(
   }
   
   if (isEntryOverrides(values) && isEntryOptions(options) && self instanceof Entry) {
-    // For each override value, check to see if it exists on the options object & if so, set it
+    values.forEach((field) => {
+      if (options[field]) self.set(field, options[field] as string);
+    });
+  }
+
+  if (isEntryAddendaOverrides(values) && isEntryAddendaOptions(options) && self instanceof EntryAddenda) {
     values.forEach((field) => {
       if (options[field]) self.set(field, options[field] as string);
     });

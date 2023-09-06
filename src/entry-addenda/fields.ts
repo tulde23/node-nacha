@@ -1,4 +1,6 @@
-module.exports = {
+import { EntryAddendaFields } from './entryAddendaTypes.js';
+
+export const fields: Partial<EntryAddendaFields> = {
   recordTypeCode: {
     name: 'Record Type Code',
     width: 1,
@@ -37,7 +39,7 @@ module.exports = {
   },
 
   entryDetailSequenceNumber: {
-    name: 'Entry Detail Sequnce Number',
+    name: 'Entry Detail Sequence Number',
     width: 7,
     position: 5,
     required: false,
@@ -46,3 +48,5 @@ module.exports = {
     value: ''
   }
 };
+
+module.exports = { fields };

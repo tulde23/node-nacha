@@ -11,8 +11,9 @@ import { fields } from './fields.js';
 import type { EntryFields, EntryOptions } from './entryTypes.js';
 import { highLevelFieldOverrides } from '../overrides.js';
 import nACHError from '../error.js';
+import EntryAddenda from '../entry-addenda/index.js';
 export default class Entry {
-  _addendas = [];
+  _addendas: Array<EntryAddenda> = [];
   fields: EntryFields
 
   constructor(options: EntryOptions, autoValidate: boolean) {
@@ -56,7 +57,7 @@ export default class Entry {
     }
   }
 
-  addAddenda(entryAddenda: { set: (arg0: string, arg1: number) => void; }) {
+  addAddenda(entryAddenda: EntryAddenda) {
 
     const traceNumber = this.get('traceNumber');
 
@@ -64,7 +65,8 @@ export default class Entry {
     this.set('addendaId', '1');
   
     // Set corresponding fields on Addenda
-    entryAddenda.set('addendaSequenceNumber', this._addendas.length + 1);
+    entryAddenda.set('addendaSequenceNumber', `${this._addendas.length + 1}`);
+
     if (typeof traceNumber === 'number'){
       entryAddenda.set('entryDetailSequenceNumber', traceNumber);
     } else {

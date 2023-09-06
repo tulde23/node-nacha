@@ -1,13 +1,12 @@
 import { fields } from './fields.js';
 import type { EntryFields, EntryOptions } from './entryTypes.js';
+import EntryAddenda from '../entry-addenda/index.js';
 export default class Entry {
-    _addendas: never[];
+    _addendas: Array<EntryAddenda>;
     fields: EntryFields;
     constructor(options: EntryOptions, autoValidate: boolean);
-    addAddenda(entryAddenda: {
-        set: (arg0: string, arg1: number) => void;
-    }): void;
-    getAddendas(): never[];
+    addAddenda(entryAddenda: EntryAddenda): void;
+    getAddendas(): EntryAddenda[];
     getRecordCount(): number;
     generateString(cb: any): void;
     _validate(): void;

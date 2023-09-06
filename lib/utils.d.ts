@@ -1,12 +1,14 @@
 import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions } from './batch/batchTypes.js';
 import Batch from './batch/index.js';
+import { EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
+import EntryAddenda from './entry-addenda/index.js';
 import type { HighLevelFieldOverrides, EntryOptions } from './entry/entryTypes.js';
 import Entry from './entry/index.js';
 export declare function pad<Text extends string = string, padEnd extends boolean = true, Char extends string = ' '>(str: Text, width: number, padRight?: padEnd, padChar?: Char): string;
 export declare function computeCheckDigit(routing: `${number}` | number): `${number}`;
 export declare function testRegex(regex: RegExp, field: {
-    number: number | string;
-    value: string;
+    number?: boolean;
+    value: unknown;
     name: string;
     type: string;
 }): boolean;
@@ -18,6 +20,7 @@ export declare function compareSets(set1: Set<string>, set2: Set<string>): boole
 type BatchOverrides = Array<HighLevelHeaderOverrides> | Array<HighLevelControlOverrides>;
 export declare function overrideLowLevel(values: BatchOverrides, options: BatchOptions, self: Batch): void;
 export declare function overrideLowLevel(values: Array<HighLevelFieldOverrides>, options: EntryOptions, self: Entry): void;
+export declare function overrideLowLevel(values: Array<HighLevelAddendaFieldOverrides>, options: EntryAddendaOptions, self: EntryAddenda): void;
 export declare function unique(): number;
 export declare function getNextMultiple(value: number, multiple: number): number;
 export declare function getNextMultipleDiff(value: number, multiple: number): number;

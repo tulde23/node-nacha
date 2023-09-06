@@ -184,13 +184,13 @@ export default class Batch {
     throw new Error(`Field ${field} not found in Batch header or control.`);
   }
 
-  set(field: HeaderKeys|ControlKeys, value: string|number) {
+  set(field: HeaderKeys|ControlKeys, value: typeof field extends HeaderKeys ? typeof header[HeaderKeys]['value'] : typeof control[ControlKeys]['value']) {
     // If the header has the field, set the value
     if (field in this.header && this.isAHeaderField(field)) {
       if (field === 'serviceClassCode'){
         this.header[field].value = value as `${number}`
       } else {
-        this.header[field]['value'] = value;
+        this.header[field]['value'] = value as string|number;
       }
     }
 

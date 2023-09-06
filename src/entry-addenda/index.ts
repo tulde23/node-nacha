@@ -1,94 +1,86 @@
 // Entry
 
-const _ = require('lodash');
-import { computeCheckDigit } from './../utils';
-import * as validate from './../validate';
-
-const highLevelOverrides = ['addendaTypeCode', 'paymentRelatedInformation', 'addendaSequenceNumber', 'entryDetailSequenceNumber'];
+import { generateString, overrideLowLevel } from '../utils.js';
+import { highLevelAddendaFieldOverrides } from '../overrides.js';
+import { EntryAddendaFields, EntryAddendaOptions } from './entryAddendaTypes.js';
+import { fields } from './fields.js';
+import { validateRequiredFields, validateACHAddendaTypeCode, validateLengths, validateDataTypes } from '../validate.js';
 
 export default class EntryAddenda {
   fields: EntryAddendaFields
-}
 
-export default function EntryAddenda(options, autoValidate) {
+  constructor(options: EntryAddendaOptions, autoValidate: boolean) {
+    // Allow the file header defaults to be override if provided
+    this.fields = (options.fields)
+      ? { ...options.fields, ...fields } as EntryAddendaFields
+      : fields as EntryAddendaFields;
 
-  // Allow the file header defaults to be overriden if provided
-  this.fields = options.fields ? _.merge(options.fields, require('./fields'), _.defaults) : _.cloneDeep(require('./fields'));
+    // Set our high-level values
+    overrideLowLevel(highLevelAddendaFieldOverrides, options, this);
 
-  // Set our high-level values
-  utils.overrideLowLevel(highLevelOverrides, options, this);
-
-  // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
-  if (options.returnCode) {
-    this.fields.returnCode.value = options.returnCode.slice(0, this.fields.returnCode.width);
-  }
-  
-  if (options.paymentRelatedInformation) {
-    this.fields.paymentRelatedInformation.value = options.paymentRelatedInformation.slice(0, this.fields.paymentRelatedInformation.width);
-  }
-
-  if (options.addendaSequenceNumber) {
-    this.fields.addendaSequenceNumber.value = Number(options.addendaSequenceNumber);
-  }
-
-  if (options.entryDetailSequenceNumber) {
-    this.fields.entryDetailSequenceNumber.value = options.entryDetailSequenceNumber.slice(0 - this.fields.entryDetailSequenceNumber.width); // last n digits. pass 
-  }
-
-  if (autoValidate !== false) {
-    // Validate required fields have been passed
-    this._validate();
-  }
-
-  return this;
-}
-
-EntryAddenda.prototype.generateString = function(cb) {
-  utils.generateString(this.fields, function(string) {
-    cb(string);
-  });
-};
-
-EntryAddenda.prototype._validate = function() {
-
-  // Validate required fields
-  validate.validateRequiredFields(this.fields);
-
-  // Validate the ACH code passed is actually valid
-  validate.validateACHAddendaTypeCode(this.fields.addendaTypeCode.value);
-
-  // Validate header field lengths
-  validate.validateLengths(this.fields);
-
-  // Validate header data types
-  validate.validateDataTypes(this.fields);
-};
-
-EntryAddenda.prototype.get = function(category) {
-
-  // If the header has it, return that (header takes priority)
-  if (this.fields[category]) {
-    return this.fields[category]['value'];
-  }
-};
-
-EntryAddenda.prototype.set = function(category, value) {
-  // If the header has the field, set the value
-  if (this.fields[category]) {
-    if (category == 'entryDetailSequenceNumber') {
-      this.fields[category]['value'] = value.slice(0 - this.fields[category].width); // pass last n digits
+    // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
+    if (options.returnCode) {
+      this.fields.returnCode.value = options.returnCode.slice(0, this.fields.returnCode.width) as `${number}`;
     }
-    else {
-      this.fields[category]['value'] = value;
+    
+    if (options.paymentRelatedInformation) {
+      this.fields.paymentRelatedInformation.value = options.paymentRelatedInformation.slice(0, this.fields.paymentRelatedInformation.width);
+    }
+
+    if (options.addendaSequenceNumber) {
+      this.fields.addendaSequenceNumber.value = options.addendaSequenceNumber;
+    }
+
+    if (options.entryDetailSequenceNumber) {
+      this.fields.entryDetailSequenceNumber.value = Number(options.entryDetailSequenceNumber.toString().slice(0 - this.fields.entryDetailSequenceNumber.width)); // last n digits. pass 
+    }
+
+    if (autoValidate !== false) {
+      // Validate required fields have been passed
+      this._validate();
     }
   }
-};
 
-EntryAddenda.prototype.getReturnCode = function() {
-  if (this.fields.paymentRelatedInformation.value || this.fields.paymentRelatedInformation.value.length > 0) {
-    return this.fields.paymentRelatedInformation.value.slice(0, 3);
+  _validate() {
+    // Validate required fields
+    validateRequiredFields(this.fields);
+
+    // Validate the ACH code passed is actually valid
+    validateACHAddendaTypeCode(this.fields.addendaTypeCode.value);
+
+    // Validate header field lengths
+    validateLengths(this.fields);
+
+    // Validate header data types
+    validateDataTypes(this.fields);
   }
-  return false;
+
+  generateString(cb: (string: string) => void) {
+    generateString(this.fields, function(string) {
+      cb(string);
+    });
+  }
+
+  getReturnCode() {
+    if (this.fields.paymentRelatedInformation.value || this.fields.paymentRelatedInformation.value.length > 0) {
+      return this.fields.paymentRelatedInformation.value.slice(0, 3);
+    }
+    return false;
+  }
+
+  get<Field extends keyof EntryAddendaFields>(field: Field): EntryAddendaFields[Field]['value'] {
+    return this.fields[field]['value'];
+  }
+
+  set<Field extends keyof EntryAddendaFields>(field: Field, value: EntryAddendaFields[Field]['value']) {
+    if (this.fields[field]) {
+      if (field === 'entryDetailSequenceNumber') {
+        this.fields.entryDetailSequenceNumber['value'] = Number(value.toString().slice(0 - this.fields[field].width)); // pass last n digits
+      } else {
+        this.fields[field]['value'] = value;
+      }
+    }
+  }
 }
 
 module.exports = EntryAddenda;

@@ -2,6 +2,9 @@
 import { testRegex } from './utils';
 import nACHError from './error';
 import { NumericalString } from './Types.js';
+import { EntryAddendaFields } from './entry-addenda/entryAddendaTypes.js';
+import { EntryFields } from './entry/entryTypes.js';
+import { BatchControls, BatchHeaders } from './batch/batchTypes.js';
 
 const ACHAddendaTypeCodes = ['02', '05', '98', '99'] as Array<NumericalString>;
 const ACHTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39'] as Array<NumericalString>;
@@ -11,9 +14,10 @@ const alphaRegex = /^[a-zA-Z]+$/;
 const alphanumericRegex = /(^[0-9a-zA-Z!"#$%&'()*+,-.\/:;<>=?@\[\]\\^_`{}|~ ]+$)|(^$)/;
 
 // Validate required fields to make sure they have values
-export function validateRequiredFields(object: Record<string, unknown>) {
+export function validateRequiredFields(object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls) {
+
   Object.keys(object).forEach((k) => {
-    const field = object[k] as { required?: boolean; value?: string; name: string; };
+    const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
     // This check ensures a required field's value is not NaN, null, undefined or empty.
     // Zero is valid, but the data type check will make sure any fields with 0 are numeric.
     if (
@@ -31,14 +35,14 @@ export function validateRequiredFields(object: Record<string, unknown>) {
 }
 
 // Validate the lengths of fields by using their `width` property
-export function validateLengths(object: Record<string, unknown>) {
+export function validateLengths(object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls) {
   Object.keys(object).forEach((k) => {
-    const field = object[k] as { width: number; value: string; name: string; };
+    const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
 
     if (field.value.toString().length > field.width) {
       throw new nACHError({
         name: 'Invalid Length',
-        message: `${field.name}'s length is ${field.value.length}, but it should be no greater than ${field.width}.`
+        message: `${field.name}'s length is ${typeof field.value === 'number' ? field.value.toString().length : field.value.length}, but it should be no greater than ${field.width}.`
       });
     }
   });
@@ -51,9 +55,9 @@ export function getNextMultipleDiff(value: number, multiple: number) {
 }
 
 // Validate the data given is of the correct ACH data type
-export function validateDataTypes(object: Record<string, unknown>) {
+export function validateDataTypes(object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls) {
   Object.keys(object).forEach((k) => {
-    const field = object[k] as { blank?: boolean; type: 'numeric'|'alpha'|'alphanumeric'; value: string; name: string; };
+    const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
 
     if ('blank' in field && field.blank !== true) {
       switch (field.type) {

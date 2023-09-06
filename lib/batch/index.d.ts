@@ -19,6 +19,6 @@ export default class Batch {
     isAHeaderField(field: HeaderKeys | ControlKeys): field is HeaderKeys;
     isAControlField(field: HeaderKeys | ControlKeys): field is ControlKeys;
     get<Field extends HeaderKeys | ControlKeys = HeaderKeys>(field: Field): Field extends HeaderKeys ? typeof header[Field]['value'] : Field extends Exclude<ControlKeys, BatchControlFieldWithOptionalValue> ? typeof control[Field]['value'] : Field extends BatchControlFieldWithOptionalValue ? string | number | undefined : never;
-    set(field: HeaderKeys | ControlKeys, value: string | number): void;
+    set(field: HeaderKeys | ControlKeys, value: typeof field extends HeaderKeys ? typeof header[HeaderKeys]['value'] : typeof control[ControlKeys]['value']): void;
 }
 export {};
