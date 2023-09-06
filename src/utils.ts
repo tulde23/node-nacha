@@ -1,5 +1,6 @@
-import { BatchOptions, EntryOptions, HighLevelControlOverrides, HighLevelFieldOverrides, HighLevelHeaderOverrides } from './Types.js';
+import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions } from './batch/batchTypes.js';
 import Batch from './batch/index.js';
+import type { HighLevelFieldOverrides, EntryOptions } from './entry/entryTypes.js';
 import Entry from './entry/index.js';
 import nACHError from './error';
 import { highLevelControlOverrideSet, highLevelFieldOverrideSet, highLevelHeaderOverrideSet } from './overrides.js';
@@ -91,7 +92,8 @@ export function compareSets(set1: Set<string>, set2: Set<string>) {
 type BatchOverrides = Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>
 
 function isBatchOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>): arg is BatchOverrides {
-  return compareSets(new Set(arg), highLevelHeaderOverrideSet) || compareSets(new Set(arg), highLevelControlOverrideSet);
+  return compareSets(new Set(arg), highLevelHeaderOverrideSet)
+      || compareSets(new Set(arg), highLevelControlOverrideSet);
 }
 
 function isBatchOptions(arg: BatchOptions|EntryOptions): arg is BatchOptions {

@@ -6,6 +6,10 @@ import * as validate from './../validate';
 
 const highLevelOverrides = ['addendaTypeCode', 'paymentRelatedInformation', 'addendaSequenceNumber', 'entryDetailSequenceNumber'];
 
+export default class EntryAddenda {
+  fields: EntryAddendaFields
+}
+
 export default function EntryAddenda(options, autoValidate) {
 
   // Allow the file header defaults to be overriden if provided

@@ -1,7 +1,3 @@
-// Entry
-
-import _ from 'lodash';
-import async from 'async';
 import { computeCheckDigit, generateString, overrideLowLevel } from './../utils';
 import {
   validateRoutingNumber,
@@ -12,7 +8,7 @@ import {
   validateACHAddendaCode
 } from './../validate';
 import { fields } from './fields.js';
-import { EntryFields, EntryOptions } from '../Types.js';
+import type { EntryFields, EntryOptions } from './entryTypes.js';
 import { highLevelFieldOverrides } from '../overrides.js';
 import nACHError from '../error.js';
 export default class Entry {
@@ -62,12 +58,18 @@ export default class Entry {
 
   addAddenda(entryAddenda: { set: (arg0: string, arg1: number) => void; }) {
 
+    const traceNumber = this.get('traceNumber');
+
     // Add indicator to Entry record
     this.set('addendaId', '1');
   
     // Set corresponding fields on Addenda
     entryAddenda.set('addendaSequenceNumber', this._addendas.length + 1);
-    entryAddenda.set('entryDetailSequenceNumber', this.get('traceNumber'));
+    if (typeof traceNumber === 'number'){
+      entryAddenda.set('entryDetailSequenceNumber', traceNumber);
+    } else {
+      entryAddenda.set('entryDetailSequenceNumber', Number(traceNumber));
+    }
   
     // Add the new entryAddenda to the addendas array
     this._addendas.push(entryAddenda);
@@ -77,17 +79,16 @@ export default class Entry {
 
   getRecordCount() { return this._addendas.length + 1; }
 
-  generateString(cb: { (string: string): void; (arg0: string): void; }) {
-    const self = this;
-    async.map(self._addendas, function(entryAddenda: { fields: any; }, done: (arg0: null, arg1: any) => void) {
-      generateString(entryAddenda.fields, function(string: any) {
-        done(null, string);
-      });
-    }, function(err: any, addendaStrings: any) {
-      generateString(self.fields, function(string: any) {
+  generateString(cb) {
+    try {
+      this._addendas.map((({ fields }) => {
+        generateString(fields, function(string) { done(null, string); });
+      }));
+    } catch (error) {
+      generateString(this.fields, function(string) {
         cb([string].concat(addendaStrings).join('\n'));
       });
-    });
+    }
   }
 
   _validate() {
@@ -120,7 +121,7 @@ export default class Entry {
     validateDataTypes(this.fields);
   }
 
-  get<Field extends keyof typeof fields = keyof typeof fields>(category: Field): this['fields'][Field]['value'] {
+  get<Field extends keyof typeof fields = keyof typeof fields>(category: Field): typeof fields[Field]['value'] {
     // If the header has it, return that (header takes priority)
     if (this.fields[category]) return this.fields[category].value;
   }

@@ -1,6 +1,6 @@
 // Batch
 import moment from 'moment';
-import type { BatchControls, BatchHeaders, BatchOptions } from '../Types.js';
+import type { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
 import { computeCheckDigit, formatDate, generateString, newLineChar, overrideLowLevel } from './../utils';
 import { validateACHServiceClassCode, validateDataTypes, validateLengths, validateRequiredFields, validateRoutingNumber } from './../validate';
 import { control } from './control';
@@ -8,7 +8,8 @@ import { header } from './header';
 import Entry from '../entry/index.js';
 import { highLevelHeaderOverrides, highLevelControlOverrides } from '../overrides.js';
 
-
+type HeaderKeys = keyof BatchHeaders;
+type ControlKeys = keyof BatchControls;
 
 export default class Batch {
   _entries: Array<Entry> = [];
@@ -108,12 +109,14 @@ export default class Batch {
       for await (const entry of this._entries) {
         entryHash += Number(entry.fields.receivingDFI.value);
 
-        if ((creditCodes).includes(entry.fields.transactionCode.value)) {
-          totalCredit += entry.fields.amount.value;
-        } else if (debitCodes.includes(entry.fields.transactionCode.value)) {
-          totalDebit += entry.fields.amount.value;
-        } else {
-          console.log('Transaction codes did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)');
+        if (typeof entry.fields.amount.value === 'number'){
+          if ((creditCodes).includes(entry.fields.transactionCode.value as string)) {
+            totalCredit += entry.fields.amount.value;
+          } else if (debitCodes.includes(entry.fields.transactionCode.value as string)) {
+            totalDebit += entry.fields.amount.value;
+          } else {
+            console.log('Transaction codes did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)');
+          }
         }
       }
     } catch (error) {
@@ -121,7 +124,7 @@ export default class Batch {
       this.control.totalDebit.value = totalDebit;
 
       // Add up the positions 4-11 and compute the total. Slice the 10 rightmost digits.
-      this.control.entryHash.value = entryHash.toString().slice(-10);
+      this.control.entryHash.value = Number(entryHash.toString().slice(-10));
 
       console.error('Transaction codes did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)');
     }
@@ -157,27 +160,43 @@ export default class Batch {
     });
   }
 
-  get<Field extends keyof typeof header | keyof typeof control = keyof typeof header | keyof typeof control>(field: Field) {
-    // If the header has the field, return the value
-    if (field in this.header) {
-      return this.header[field as keyof typeof header]['value'];
-    }
-
-    // If the control has the field, return the value
-    if (field in this.control) {
-      return this.control[field as keyof typeof control]['value'];
-    }
+  isAHeaderField(field: HeaderKeys|ControlKeys): field is HeaderKeys {
+    return Object.keys(this.header).includes(field)
   }
 
-  set<Field extends keyof typeof header | keyof typeof control = keyof typeof header | keyof typeof control>(field: Field, value: string|number) {
+ isAControlField(field: HeaderKeys|ControlKeys): field is ControlKeys {
+    return Object.keys(this.control).includes(field)
+  }
+
+  get<Field extends HeaderKeys|ControlKeys = HeaderKeys>(field: Field): Field extends HeaderKeys 
+    ? typeof header[Field]['value']
+    : Field extends Exclude<ControlKeys, BatchControlFieldWithOptionalValue>
+      ? typeof control[Field]['value']
+      : Field extends BatchControlFieldWithOptionalValue
+        ? string | number | undefined
+        : never {
+    // If the header has the field, return the value
+    if (field in this.header && this.isAHeaderField(field)) return this.header[field]['value'] as Field extends HeaderKeys ? typeof header[Field]['value'] : never;
+
+    // If the control has the field, return the value
+    if (field in this.control && this.isAControlField(field)) return this.control[field]['value'];
+
+    throw new Error(`Field ${field} not found in Batch header or control.`);
+  }
+
+  set(field: HeaderKeys|ControlKeys, value: string|number) {
     // If the header has the field, set the value
-    if (field in this.header) {
-      this.header[field as keyof typeof header]['value'] = value;
+    if (field in this.header && this.isAHeaderField(field)) {
+      if (field === 'serviceClassCode'){
+        this.header[field].value = value as `${number}`
+      } else {
+        this.header[field]['value'] = value;
+      }
     }
 
     // If the control has the field, set the value
-    if (field in this.control) {
-      this.control[field as keyof typeof control]['value'] = value;
+    if (field in this.control && this.isAControlField(field)) {
+      this.control[field]['value'] = value;
     }
   }
 }

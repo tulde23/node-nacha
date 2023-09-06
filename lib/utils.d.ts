@@ -1,5 +1,6 @@
-import { BatchOptions, EntryOptions, HighLevelControlOverrides, HighLevelFieldOverrides, HighLevelHeaderOverrides } from './Types.js';
+import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions } from './batch/batchTypes.js';
 import Batch from './batch/index.js';
+import type { HighLevelFieldOverrides, EntryOptions } from './entry/entryTypes.js';
 import Entry from './entry/index.js';
 export declare function pad<Text extends string = string, padEnd extends boolean = true, Char extends string = ' '>(str: Text, width: number, padRight?: padEnd, padChar?: Char): string;
 export declare function computeCheckDigit(routing: `${number}` | number): `${number}`;

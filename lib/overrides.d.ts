@@ -1,4 +1,5 @@
-import { HighLevelControlOverrides, HighLevelFieldOverrides, HighLevelHeaderOverrides } from './Types.js';
+import type { HighLevelHeaderOverrides, HighLevelControlOverrides } from './batch/batchTypes.js';
+import type { HighLevelFieldOverrides } from './entry/entryTypes.js';
 export declare const highLevelFieldOverrides: Array<HighLevelFieldOverrides>;
 export declare const highLevelFieldOverrideSet: Set<HighLevelFieldOverrides>;
 export declare const highLevelHeaderOverrides: Array<HighLevelHeaderOverrides>;

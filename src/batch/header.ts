@@ -1,4 +1,4 @@
-import { BatchHeaders } from '../Types.js';
+import { BatchHeaders } from './batchTypes.js';
 
 export const header: BatchHeaders = {
   recordTypeCode: {
@@ -16,7 +16,7 @@ export const header: BatchHeaders = {
     position: 2,
     required: true,
     type: 'numeric',
-    value: ''
+    value: '' as `${number}`
   },
 
   companyName: {

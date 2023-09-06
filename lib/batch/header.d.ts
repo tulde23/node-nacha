@@ -1,2 +1,2 @@
-import { BatchHeaders } from '../Types.js';
+import { BatchHeaders } from './batchTypes.js';
 export declare const header: BatchHeaders;

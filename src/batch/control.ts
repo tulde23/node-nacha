@@ -1,4 +1,4 @@
-import { BatchControls } from '../Types.js';
+import { BatchControls } from './batchTypes.js';
 
 export const control: BatchControls = {
   recordTypeCode: {

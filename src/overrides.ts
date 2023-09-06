@@ -1,4 +1,5 @@
-import { HighLevelControlOverrides, HighLevelFieldOverrides, HighLevelHeaderOverrides } from './Types.js';
+import type { HighLevelHeaderOverrides, HighLevelControlOverrides } from './batch/batchTypes.js';
+import type { HighLevelFieldOverrides } from './entry/entryTypes.js';
 
 export const highLevelFieldOverrides: Array<HighLevelFieldOverrides> = [
   'transactionCode', 'receivingDFI', 'checkDigit', 'DFIAccount', 'amount', 'idNumber', 'individualName', 'discretionaryData', 'addendaId', 'traceNumber'

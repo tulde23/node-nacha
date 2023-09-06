@@ -1,4 +1,4 @@
-import { EntryFields } from '../Types.js';
+import { EntryFields } from './entryTypes.js';
 
 export const fields: EntryFields = {
   recordTypeCode: {
@@ -24,7 +24,7 @@ export const fields: EntryFields = {
     position: 3,
     required: true,
     type: 'numeric',
-    value: ''
+    value: '' as `${number}`
   },
 
   checkDigit: {
@@ -33,7 +33,7 @@ export const fields: EntryFields = {
     position: 4,
     required: true,
     type: 'numeric',
-    value: ''
+    value: '' as `${number}`
   },
 
   DFIAccount: {

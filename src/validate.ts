@@ -3,8 +3,6 @@ import { testRegex } from './utils';
 import nACHError from './error';
 import { NumericalString } from './Types.js';
 
-
-
 const ACHAddendaTypeCodes = ['02', '05', '98', '99'] as Array<NumericalString>;
 const ACHTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39'] as Array<NumericalString>;
 const ACHServiceClassCodes = ['200', '220', '225'] as Array<NumericalString>;

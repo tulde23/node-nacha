@@ -1,2 +1,2 @@
-import { EntryFields } from '../Types.js';
+import { EntryFields } from './entryTypes.js';
 export declare const fields: EntryFields;

@@ -1,2 +1,2 @@
-import { BatchControls } from '../Types.js';
+import { BatchControls } from './batchTypes.js';
 export declare const control: BatchControls;

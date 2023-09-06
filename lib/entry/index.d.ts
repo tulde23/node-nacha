@@ -1,5 +1,5 @@
 import { fields } from './fields.js';
-import { EntryFields, EntryOptions } from '../Types.js';
+import type { EntryFields, EntryOptions } from './entryTypes.js';
 export default class Entry {
     _addendas: never[];
     fields: EntryFields;
@@ -9,11 +9,8 @@ export default class Entry {
     }): void;
     getAddendas(): never[];
     getRecordCount(): number;
-    generateString(cb: {
-        (string: string): void;
-        (arg0: string): void;
-    }): void;
+    generateString(cb: any): void;
     _validate(): void;
-    get<Field extends keyof typeof fields = keyof typeof fields>(category: Field): this['fields'][Field]['value'];
+    get<Field extends keyof typeof fields = keyof typeof fields>(category: Field): typeof fields[Field]['value'];
     set<Field extends keyof typeof fields = keyof typeof fields>(category: Field, value: string): void;
 }
