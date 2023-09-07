@@ -6,6 +6,7 @@ import { EntryFields, EntryOptions, HighLevelFieldOverrides } from '../entry/ent
 import { highLevelAddendaFieldOverrides, highLevelControlOverrides, highLevelFieldOverrides, highLevelHeaderOverrides } from '../overrides.js';
 import { control } from '../batch/control';
 import { header } from '../batch/header';
+import { isBatchOverrides, overrideLowLevel } from '../utils.js';
 
 interface DataMap {
   EntryAddenda: {
@@ -26,10 +27,7 @@ interface DataMap {
   },
   Batch: {
     options: BatchOptions,
-    overrides: {
-      header: Array<HighLevelHeaderOverrides>,
-      control: Array<HighLevelControlOverrides>,
-    },
+    overrides: { header: Array<HighLevelHeaderOverrides>, control: Array<HighLevelControlOverrides> },
     key: ['header','control']
     fields: undefined
     header: BatchHeaders,
@@ -37,10 +35,8 @@ interface DataMap {
   },
 }
 
-type DataStructures = Extract<keyof DataMap, 'Entry'|'EntryAddenda'|'Batch'>;
-
 export default class achBuilder<
-  DataStruct extends DataStructures = 'Entry'|'EntryAddenda'|'Batch',
+  DataStruct extends 'Entry'|'EntryAddenda'|'Batch',
   Options extends DataMap[DataStruct]['options'] = DataMap[DataStruct]['options'],
   Overrides extends DataMap[DataStruct]['overrides'] = DataMap[DataStruct]['overrides'],
   Fields extends DataMap[DataStruct]['fields'] = DataMap[DataStruct]['fields'],
@@ -81,59 +77,47 @@ export default class achBuilder<
     }
   }
 
-  overrideLowLevel(): void {
-    
+  overrideOptions(){
+
+    if (this.overrides?.header)
+    overrideLowLevel(this.overrides, this.options, self)
   }
 
-  categoryIsFields(category: keyof Fields|keyof Headers|keyof Controls): category is keyof Fields {
-    if (this.name === 'EntryAddenda' && this.fields) {
-      return category in this.fields;
-    } else if (this.name === 'Entry' && this.fields) {
-      return category in this.fields;
-    }
+  categoryIsKeyOfEntryAddendaFields(category: keyof EntryAddendaFields|keyof EntryFields|keyof Headers|keyof Controls): category is keyof EntryAddendaFields {
+    return (this.name === 'EntryAddenda' && this.fields !== undefined && category in this.fields);
+  }
 
-    return false;
+  categoryIsKeyOfEntryFields(category: keyof EntryFields|keyof EntryAddendaFields|keyof Headers|keyof Controls): category is keyof EntryFields {
+    return (this.name === 'Entry' && this.fields !== undefined && category in this.fields);
   }
 
   categoryIsKeyOfHeaders(category: keyof Fields|keyof Headers|keyof Controls): category is keyof Headers {
-    if (this.name === 'Batch' && this.header) {
-      return category in this.header;
-    }
-
-    return false;
+    return (this.name === 'Batch' && this.header !== undefined && category in this.header)
   }
 
   categoryIsKeyOfControls(category: keyof Fields|keyof Headers|keyof Controls): category is keyof Controls {
-    if (this.name === 'Batch' && this.control) {
-      return category in this.control;
-    }
-
-    return false;
+    return (this.name === 'Batch' && this.control !== undefined && category in this.control)
   }
 
-  set<Field extends DataStruct extends 'EntryAddenda'
-      ? keyof Fields
-      : DataStruct extends 'Entry'
-        ? keyof Fields
-        : DataStruct extends 'Batch'
-          ? keyof Headers|keyof Controls
-          : never,
-  >(category: Field, value: string) {
-    console.debug({ category, value });
-    // If the header has the field, set the value
-    
-    if (this.name === 'EntryAddenda' && this.fields && this.categoryIsFields(category)) {
-        this.fields[category].value = value;
-    } else if (this.name === 'Entry' && this.fields && this.categoryIsFields(category)) {
-        this.fields[category].value = value;
-    } else if (this.name === 'Batch') {
-      if (this.header && this.categoryIsKeyOfHeaders(category)) {
-        this.header[category].value = value;
-      } else if (this.control && this.categoryIsKeyOfControls(category)) {
-        this.control[category].value = value;
+  get(field: DataStruct extends 'EntryAddenda'
+          ? keyof EntryAddendaFields
+          : DataStruct extends 'Entry'
+            ? keyof EntryFields
+            : DataStruct extends 'Batch'
+              ? keyof (Headers & Controls)
+              : never) {
+    console.log(field);
+  }
+
+  set(category: DataStruct extends 'EntryAddenda'
+  ? keyof EntryAddendaFields
+  : DataStruct extends 'Entry'
+    ? keyof EntryFields
+    : DataStruct extends 'Batch'
+      ? keyof (Headers & Controls)
+      : never, value: string) {
+        console.log(category, value)
       }
-    }
-  }
 }
 
 module.exports = achBuilder;

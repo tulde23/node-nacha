@@ -95,7 +95,7 @@ export function compareSets(set1: Set<string>, set2: Set<string>) {
 
 type BatchOverrides = Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>
 
-function isBatchOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is BatchOverrides {
+export function isBatchOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is BatchOverrides {
   return compareSets(new Set(arg), highLevelHeaderOverrideSet)
       || compareSets(new Set(arg), highLevelControlOverrideSet);
 }
