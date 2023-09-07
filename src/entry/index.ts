@@ -129,6 +129,7 @@ export default class Entry {
   }
 
   set<Field extends keyof typeof fields = keyof typeof fields>(category: Field, value: string) {
+    console.debug({ category, value });
     // If the header has the field, set the value
     if (this.fields[category]) this.fields[category]['value'] = value;
   }

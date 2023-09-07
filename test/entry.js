@@ -6,7 +6,7 @@ const EntryAddenda = require('../lib/entry-addenda');
 describe('Entry', function() {
   describe('Create Entry', function() {
     it('should create an entry successfully', function() {
-      var entry = new Entry({
+      new Entry({
         receivingDFI: '081000210',
         DFIAccount: '12345678901234567',
         amount: '3521',
@@ -14,12 +14,12 @@ describe('Entry', function() {
         idNumber: 'RAj##23920rjf31',
         individualName: 'Glen Selle',
         discretionaryData: 'A1'
-      });
-      entry.generateString(function(string) {
-        console.log(string);
+      }).generateString((string) => {
+        console.log('[Test::entry.js:Create Entry-1]', string);
       });
     });
   });
+
   describe('Create Entry with addenda', function() {
     it('should create an entry with an addenda successfully', function() {
       var entry = new Entry({

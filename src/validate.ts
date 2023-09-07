@@ -24,6 +24,8 @@ export function validateRequiredFields(object: EntryAddendaFields|EntryFields|Ba
         ('required' in field && typeof field.required === 'boolean' && field.required === true)
         && (('value' in field === false) || (!field.value) || field.value.toString().length === 0)
       ) {
+      console.error('[nACH Error]', { field });
+
       throw new nACHError({
         name: 'Required Field Blank',
         message: `${field.name} is a required field but its value is: ${field.value}`
