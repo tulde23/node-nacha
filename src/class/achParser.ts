@@ -1,12 +1,12 @@
-import { BatchControls, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from '../batch/batchTypes.js';
-import { EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from '../entry-addenda/entryAddendaTypes.js';
-import { fields as entryAddendaFields } from '../entry-addenda/fields.js';
-import { fields as entryFields } from '../entry/fields.js';
-import { EntryFields, EntryOptions, HighLevelFieldOverrides } from '../entry/entryTypes.js';
-import { highLevelAddendaFieldOverrides, highLevelControlOverrides, highLevelFieldOverrides, highLevelHeaderOverrides } from '../overrides.js';
+import { BatchControlKeys, BatchControls, BatchHeaderKeys, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from '../batch/batchTypes.js';
 import { control } from '../batch/control';
 import { header } from '../batch/header';
-import { isBatchOverrides, overrideLowLevel } from '../utils.js';
+import { EntryAddendaFieldKeys, EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from '../entry-addenda/entryAddendaTypes.js';
+import { fields as entryAddendaFields } from '../entry-addenda/fields.js';
+import { EntryFieldKeys, EntryFields, EntryOptions, HighLevelFieldOverrides } from '../entry/entryTypes.js';
+import { fields as entryFields } from '../entry/fields.js';
+import { highLevelAddendaFieldOverrides, highLevelControlOverrides, highLevelFieldOverrides, highLevelHeaderOverrides } from '../overrides.js';
+import { isBatchOptions, isEntryAddendaOptions, isEntryAddendaOverrides, isEntryOptions, isEntryOverrides } from '../utils.js';
 
 interface DataMap {
   EntryAddenda: {
@@ -78,9 +78,47 @@ export default class achBuilder<
   }
 
   overrideOptions(){
+    const { name, overrides, options } = this;
 
-    if (this.overrides?.header)
-    overrideLowLevel(this.overrides, this.options, self)
+    if (name === 'Batch'
+    && ('header' in overrides && 'control' in overrides)
+    && ('header' in this && 'control' in this)
+    && isBatchOptions(options)
+    ){
+      overrides.header.forEach((field) => {
+        if (options[field]) this.set<'Batch', 'header'>(field, options[field] as NonNullable<typeof options[typeof field]>);
+      });
+
+      overrides.control.forEach((field) => {
+        if (options[field]) this.set<'Batch', 'control'>(field, options[field]);
+      });
+
+      return this;
+    }
+
+    if (name === 'Entry'
+    && 'fields' in this
+    && Array.isArray(overrides)
+    && isEntryOverrides(overrides)
+    && isEntryOptions(options)){
+      overrides.forEach((field) => {
+        if (options[field]) this.set<'Entry'>(field, options[field]);
+      });
+
+      return this;
+    }
+
+    if (name === 'EntryAddenda'
+    && 'fields' in this
+    && Array.isArray(overrides)
+    && isEntryAddendaOverrides(overrides)
+    && isEntryAddendaOptions(options)){
+      overrides.forEach((field) => {
+        if (field in options && options[field] !== undefined) this.set<'EntryAddenda'>(field, options[field] as NonNullable<typeof options[typeof field]>);
+      });
+
+      return this;
+    }
   }
 
   categoryIsKeyOfEntryAddendaFields(category: keyof EntryAddendaFields|keyof EntryFields|keyof Headers|keyof Controls): category is keyof EntryAddendaFields {
@@ -100,24 +138,143 @@ export default class achBuilder<
   }
 
   get(field: DataStruct extends 'EntryAddenda'
-          ? keyof EntryAddendaFields
+          ? EntryAddendaFieldKeys
           : DataStruct extends 'Entry'
-            ? keyof EntryFields
+            ? EntryFieldKeys
             : DataStruct extends 'Batch'
-              ? keyof (Headers & Controls)
+              ? (BatchHeaderKeys & BatchControlKeys)
               : never) {
     console.log(field);
   }
 
-  set(category: DataStruct extends 'EntryAddenda'
-  ? keyof EntryAddendaFields
-  : DataStruct extends 'Entry'
-    ? keyof EntryFields
-    : DataStruct extends 'Batch'
-      ? keyof (Headers & Controls)
-      : never, value: string) {
-        console.log(category, value)
-      }
+  set<
+    Struct extends 'Batch'|'Entry'|'EntryAddenda',
+    BatchCategoryValue extends Struct extends 'EntryAddenda'
+      ? undefined : Struct extends 'Entry'
+        ? undefined : Struct extends 'Batch'
+          ? 'header' | 'control' : never = Struct extends 'EntryAddenda'
+          ? undefined : Struct extends 'Entry'
+            ? undefined : Struct extends 'Batch'
+              ? 'header'|'control'
+              : never,
+  >(
+    field: Struct extends 'EntryAddenda'
+      ? EntryAddendaFieldKeys
+      : Struct extends 'Entry'
+        ? EntryFieldKeys
+        : Struct extends 'Batch'
+          ? BatchCategoryValue extends 'header'
+            ? BatchHeaderKeys
+            : BatchCategoryValue extends 'control'
+              ? BatchControlKeys
+              : never
+          : never,
+        value: Struct extends 'EntryAddenda'
+          ? EntryAddendaFields[EntryAddendaFieldKeys]['value']
+          : Struct extends 'Entry'
+            ? EntryFields[EntryFieldKeys]['value']
+            : Struct extends 'Batch'
+              ? BatchCategoryValue extends 'header'
+                ? BatchHeaders[BatchHeaderKeys]['value']
+                : BatchCategoryValue extends 'control'
+                  ? BatchControls[BatchControlKeys]['value']
+                  : never
+              : never,
+        ) {
+          const { name } = this;
+
+          if (!field) return;
+
+          const isAHeaderField = (field: EntryFieldKeys|EntryAddendaFieldKeys|BatchHeaderKeys|BatchControlKeys): field is BatchHeaderKeys => {
+            return ('header' in this && this.header !== undefined && Object.keys(this.header).includes(field))
+          }
+
+          const isAControlField = (field: EntryFieldKeys|EntryAddendaFieldKeys|BatchHeaderKeys|BatchControlKeys): field is BatchControlKeys => {
+            return ('control' in this && this.control !== undefined && Object.keys(this.control).includes(field))
+          }
+
+          const isAEntryField = (field: EntryFieldKeys|EntryAddendaFieldKeys|BatchHeaderKeys|BatchControlKeys): field is EntryFieldKeys => {
+            return ('fields' in this && this.fields !== undefined && Object.keys(this.fields).includes(field))
+          }
+
+          const isAEntryAddendaField = (field: EntryFieldKeys|EntryAddendaFieldKeys|BatchHeaderKeys|BatchControlKeys): field is EntryAddendaFieldKeys => {
+            return ('fields' in this && this.fields !== undefined && Object.keys(this.fields).includes(field))
+          }
+
+          const controlIsBatchControls = (controls: BatchControls|BatchHeaders): controls is BatchControls => {
+            return (
+              'control' in this
+              && this.control !== undefined
+              && (Object.keys(this.control).includes('recordTypeCode')
+                && Object.keys(this.control).includes(Object.keys(controls)[Object.keys(controls).length - 1]))
+            )
+          }
+
+          const fieldsIsEntryFields = (fields: EntryFields|EntryAddendaFields): fields is EntryFields => {
+            return (
+              'fields' in this
+              && this.fields !== undefined
+              && (Object.keys(this.fields).includes('transactionCode')
+                && Object.keys(this.fields).includes(Object.keys(fields)[Object.keys(fields).length - 1]))
+            )
+          }
+
+          const fieldsIsEntryAddendaFields = (fields: EntryFields|EntryAddendaFields): fields is EntryAddendaFields => {
+            return (
+              'fields' in this
+              && this.fields !== undefined
+              && (Object.keys(this.fields).includes('recordTypeCode')
+                && Object.keys(this.fields).includes(Object.keys(fields)[Object.keys(fields).length - 1]))
+            )
+          }
+
+            if (name === 'Batch'
+              && ('header' in this && 'control' in this)
+              && (this.header !== undefined && this.control !== undefined)
+              && controlIsBatchControls(this.control)
+            ){ // If the header has the field, set the value
+              if (isAHeaderField(field) && field in this.header) {
+                if (field === 'serviceClassCode'){
+                  this.header[field satisfies 'serviceClassCode'].value = value as `${number}`
+                } else {
+                  this.header[field satisfies BatchHeaderKeys].value = value as string|number;
+                }
+              }
+
+              // If the control has the field, set the value
+              if (isAControlField(field) && field in this.control) {
+                this.control[field satisfies BatchControlKeys].value = value;
+              }
+
+              return this;
+            }
+
+            if (name === 'Entry'
+              && ('fields' in this && this.fields !== undefined)
+              && fieldsIsEntryFields(this.fields)
+              && isAEntryField(field)
+            ){
+              // If the entry has the field, set the value
+              this.fields[field satisfies EntryFieldKeys].value = value as string|number;
+
+              return this;
+            }
+
+            if (name === 'EntryAddenda'
+              && ('fields' in this && this.fields !== undefined)
+              && fieldsIsEntryAddendaFields(this.fields)
+              && isAEntryAddendaField(field)
+            ){
+              if (field === 'entryDetailSequenceNumber' && value) {
+                this.fields.entryDetailSequenceNumber.value = Number(value.toString().slice(0 - this.fields.entryDetailSequenceNumber.width)); // pass last n digits
+              } else {
+                this.fields[field satisfies EntryAddendaFieldKeys].value = value as string|number;
+              }
+
+              return this;
+            }
+          }
+      
 }
 
 module.exports = achBuilder;

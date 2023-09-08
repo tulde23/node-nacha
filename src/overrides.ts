@@ -1,5 +1,5 @@
 import type { HighLevelHeaderOverrides, HighLevelControlOverrides } from './batch/batchTypes.js';
-import { HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
+import type { HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
 import type { HighLevelFieldOverrides } from './entry/entryTypes.js';
 
 // Entry Addenda Overrides

@@ -1,6 +1,6 @@
-import { BatchControls, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from '../batch/batchTypes.js';
-import { EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from '../entry-addenda/entryAddendaTypes.js';
-import { EntryFields, EntryOptions, HighLevelFieldOverrides } from '../entry/entryTypes.js';
+import { BatchControlKeys, BatchControls, BatchHeaderKeys, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from '../batch/batchTypes.js';
+import { EntryAddendaFieldKeys, EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from '../entry-addenda/entryAddendaTypes.js';
+import { EntryFieldKeys, EntryFields, EntryOptions, HighLevelFieldOverrides } from '../entry/entryTypes.js';
 interface DataMap {
     EntryAddenda: {
         options: EntryAddendaOptions;
@@ -30,8 +30,7 @@ interface DataMap {
         control: BatchControls;
     };
 }
-type DataStructures = Extract<keyof DataMap, 'Entry' | 'EntryAddenda' | 'Batch'>;
-export default class achBuilder<DataStruct extends DataStructures = 'Entry' | 'EntryAddenda' | 'Batch', Options extends DataMap[DataStruct]['options'] = DataMap[DataStruct]['options'], Overrides extends DataMap[DataStruct]['overrides'] = DataMap[DataStruct]['overrides'], Fields extends DataMap[DataStruct]['fields'] = DataMap[DataStruct]['fields'], Headers extends DataMap[DataStruct]['header'] = DataMap[DataStruct]['header'], Controls extends DataMap[DataStruct]['control'] = DataMap[DataStruct]['control']> {
+export default class achBuilder<DataStruct extends 'Entry' | 'EntryAddenda' | 'Batch', Options extends DataMap[DataStruct]['options'] = DataMap[DataStruct]['options'], Overrides extends DataMap[DataStruct]['overrides'] = DataMap[DataStruct]['overrides'], Fields extends DataMap[DataStruct]['fields'] = DataMap[DataStruct]['fields'], Headers extends DataMap[DataStruct]['header'] = DataMap[DataStruct]['header'], Controls extends DataMap[DataStruct]['control'] = DataMap[DataStruct]['control']> {
     name: DataStruct;
     options: Options;
     overrides: Overrides;
@@ -42,10 +41,12 @@ export default class achBuilder<DataStruct extends DataStructures = 'Entry' | 'E
         options: Options;
         name: DataStruct;
     });
-    overrideLowLevel(): void;
-    categoryIsFields(category: keyof Fields | keyof Headers | keyof Controls): category is keyof Fields;
+    overrideOptions(): this | undefined;
+    categoryIsKeyOfEntryAddendaFields(category: keyof EntryAddendaFields | keyof EntryFields | keyof Headers | keyof Controls): category is keyof EntryAddendaFields;
+    categoryIsKeyOfEntryFields(category: keyof EntryFields | keyof EntryAddendaFields | keyof Headers | keyof Controls): category is keyof EntryFields;
     categoryIsKeyOfHeaders(category: keyof Fields | keyof Headers | keyof Controls): category is keyof Headers;
     categoryIsKeyOfControls(category: keyof Fields | keyof Headers | keyof Controls): category is keyof Controls;
-    set<Field extends DataStruct extends 'EntryAddenda' ? keyof Fields : DataStruct extends 'Entry' ? keyof Fields : DataStruct extends 'Batch' ? keyof Headers | keyof Controls : never>(category: Field, value: string): void;
+    get(field: DataStruct extends 'EntryAddenda' ? EntryAddendaFieldKeys : DataStruct extends 'Entry' ? EntryFieldKeys : DataStruct extends 'Batch' ? (BatchHeaderKeys & BatchControlKeys) : never): void;
+    set<Struct extends 'Batch' | 'Entry' | 'EntryAddenda', BatchCategoryValue extends Struct extends 'EntryAddenda' ? undefined : Struct extends 'Entry' ? undefined : Struct extends 'Batch' ? 'header' | 'control' : never = Struct extends 'EntryAddenda' ? undefined : Struct extends 'Entry' ? undefined : Struct extends 'Batch' ? 'header' | 'control' : never>(field: Struct extends 'EntryAddenda' ? EntryAddendaFieldKeys : Struct extends 'Entry' ? EntryFieldKeys : Struct extends 'Batch' ? BatchCategoryValue extends 'header' ? BatchHeaderKeys : BatchCategoryValue extends 'control' ? BatchControlKeys : never : never, value: Struct extends 'EntryAddenda' ? EntryAddendaFields[EntryAddendaFieldKeys]['value'] : Struct extends 'Entry' ? EntryFields[EntryFieldKeys]['value'] : Struct extends 'Batch' ? BatchCategoryValue extends 'header' ? BatchHeaders[BatchHeaderKeys]['value'] : BatchCategoryValue extends 'control' ? BatchControls[BatchControlKeys]['value'] : never : never): this | undefined;
 }
 export {};

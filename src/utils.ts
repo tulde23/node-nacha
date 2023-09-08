@@ -1,5 +1,6 @@
 import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions } from './batch/batchTypes.js';
 import Batch from './batch/index.js';
+import achBuilder from './class/achParser.js';
 import { EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
 import EntryAddenda from './entry-addenda/index.js';
 import type { HighLevelFieldOverrides, EntryOptions } from './entry/entryTypes.js';
@@ -13,9 +14,11 @@ let counter = 0;
 // parameters. First, a boolean called 'padRight' which by default is true. This means padding 
 // will be applied to the right side of the string. Setting this to false will pad the left side of the
 // string. You can also specify the character you want to use to pad the string.
-export function pad<Text extends string = string, padEnd extends boolean = true, Char extends string = ' '>(
+export function pad<Text extends string|number = string, padEnd extends boolean = true, Char extends string = ' '>(
   str: Text, width: number, padRight: padEnd = true as padEnd, padChar: Char = ' ' as Char
   ) {
+  if (typeof str === 'number') str = str.toString() as Text;
+  if (typeof str !== 'string') throw new TypeError('pad() requires a string or number to pad');
   if (str.length >= width) {
     return str;
   } else {
@@ -94,13 +97,20 @@ export function compareSets(set1: Set<string>, set2: Set<string>) {
 }
 
 type BatchOverrides = Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>
+type BatchOverrideRecord = { header: Array<HighLevelHeaderOverrides>, control: Array<HighLevelControlOverrides> }
 
 export function isBatchOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is BatchOverrides {
   return compareSets(new Set(arg), highLevelHeaderOverrideSet)
       || compareSets(new Set(arg), highLevelControlOverrideSet);
 }
 
-function isBatchOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is BatchOptions {
+export function isBatchHeaderOverrides(
+  arg: Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>|Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>
+  ): arg is Array<HighLevelHeaderOverrides> {
+  return compareSets(new Set(arg), highLevelHeaderOverrideSet);
+}
+
+export function isBatchOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is BatchOptions {
   if (typeof arg !== 'object') return false;
   if (Object.keys(arg).length === 0) return false;
   if ('header' in arg && 'control' in arg && 'originatingDFI' in arg) return true;
@@ -108,11 +118,14 @@ function isBatchOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg
   return false;
 }
 
-function isEntryOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelFieldOverrides> {
+export function isEntryOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelFieldOverrides> {
+  if (!Array.isArray(arg)) return false;
+  if (arg.length === 0) return false;
+
   return compareSets(new Set(arg), highLevelFieldOverrideSet);
 }
 
-function isEntryOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryOptions {
+export function isEntryOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryOptions {
   if (typeof arg !== 'object') return false;
   if (Object.keys(arg).length === 0) return false;
   if ('fields' in arg){
@@ -122,11 +135,14 @@ function isEntryOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg
   return false;
 }
 
-function isEntryAddendaOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelAddendaFieldOverrides> {
+export function isEntryAddendaOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelAddendaFieldOverrides> {
+  if (!Array.isArray(arg)) return false;
+  if (arg.length === 0) return false;
+  
   return compareSets(new Set(arg), highLevelAddendaFieldOverrideSet);
 }
 
-function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryAddendaOptions {
+export function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryAddendaOptions {
   if (typeof arg !== 'object') return false;
   if (Object.keys(arg).length === 0) return false;
   if ('fields' in arg) return true;
@@ -134,13 +150,13 @@ function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddendaOption
   return false;
 }
 
-export function overrideLowLevel(values: BatchOverrides, options: BatchOptions, self: Batch): void
+export function overrideLowLevel(values: Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>, options: BatchOptions, self: Batch|achBuilder<'Batch'>): void
 export function overrideLowLevel(values: Array<HighLevelFieldOverrides>, options: EntryOptions, self: Entry): void
 export function overrideLowLevel(values: Array<HighLevelAddendaFieldOverrides>, options: EntryAddendaOptions, self: EntryAddenda): void
 export function overrideLowLevel(
-  values: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>,
+  values: Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>,
   options: BatchOptions|EntryOptions|EntryAddendaOptions,
-  self: Batch|Entry|EntryAddenda
+  self: Batch|achBuilder<'Batch'>|Entry|EntryAddenda
 ): void {
   if (!Array.isArray(values)) throw new Error('overrideLowLevel() requires an array of values to override');
   if (typeof options !== 'object') throw new Error('overrideLowLevel() requires an object of options to override');
@@ -150,7 +166,7 @@ export function overrideLowLevel(
   if (Object.keys(options).length === 0) return;
   if (Object.keys(self).length === 0) return;
 
-  if (isBatchOverrides(values) && isBatchOptions(options) && self instanceof Batch) {
+  if (isBatchOverrides(values) && isBatchOptions(options) && (self instanceof Batch || self instanceof achBuilder)) {
     // For each override value, check to see if it exists on the options object & if so, set it
     values.forEach((field) => {
       if (options[field]) self.set(field, options[field] as string|number);

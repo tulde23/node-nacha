@@ -1,12 +1,12 @@
 // Batch
 import moment from 'moment';
-import type { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
+import Entry from '../entry/index.js';
+import { highLevelControlOverrides, highLevelHeaderOverrides } from '../overrides.js';
 import { computeCheckDigit, formatDate, generateString, newLineChar, overrideLowLevel } from './../utils';
 import { validateACHServiceClassCode, validateDataTypes, validateLengths, validateRequiredFields, validateRoutingNumber } from './../validate';
+import type { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
 import { control } from './control';
 import { header } from './header';
-import Entry from '../entry/index.js';
-import { highLevelHeaderOverrides, highLevelControlOverrides } from '../overrides.js';
 
 type HeaderKeys = keyof BatchHeaders;
 type ControlKeys = keyof BatchControls;

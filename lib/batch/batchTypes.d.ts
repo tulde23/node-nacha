@@ -1,26 +1,23 @@
 import { CamelToTitleCase, BaseFieldParams, NumericalString } from '../Types.js';
-/**************|
- * BATCH TYPES |
- **************/
-type BatchHeaderKeys = 'recordTypeCode' | 'serviceClassCode' | 'companyName' | 'companyDiscretionaryData' | 'companyIdentification' | 'standardEntryClassCode' | 'companyEntryDescription' | 'companyDescriptiveDate' | 'effectiveEntryDate' | 'settlementDate' | 'originatorStatusCode' | 'originatingDFI' | 'batchNumber';
-export type BatchHeaderKeysWithStringValue = Exclude<BatchHeaderKeys, 'companyDiscretionaryData' | 'settlementDate' | 'serviceClassCode' | 'batchNumber'>;
-export type BatchHeaderKeysWithNumericalStringValue = Extract<BatchHeaderKeys, 'serviceClassCode'>;
-export type BatchHeaderKeysWithNumberValue = Extract<BatchHeaderKeys, 'batchNumber'>;
-export type BatchHeaderKeysWithBlankFields = Extract<BatchHeaderKeys, 'companyDiscretionaryData' | 'settlementDate'>;
+export type BatchHeaderKeys = 'recordTypeCode' | 'serviceClassCode' | 'companyName' | 'companyDiscretionaryData' | 'companyIdentification' | 'standardEntryClassCode' | 'companyEntryDescription' | 'companyDescriptiveDate' | 'effectiveEntryDate' | 'settlementDate' | 'originatorStatusCode' | 'originatingDFI' | 'batchNumber';
 export type HighLevelHeaderOverrides = 'serviceClassCode' | 'companyDiscretionaryData' | 'companyIdentification' | 'standardEntryClassCode';
+type BatchHeaderKeysWithStringValue = Exclude<BatchHeaderKeys, 'companyDiscretionaryData' | 'settlementDate' | 'serviceClassCode' | 'batchNumber'>;
+type BatchHeaderKeysWithNumericalStringValue = Extract<BatchHeaderKeys, 'serviceClassCode'>;
+type BatchHeaderKeysWithNumberValue = Extract<BatchHeaderKeys, 'batchNumber'>;
+type BatchHeaderKeysWithBlankFields = Extract<BatchHeaderKeys, 'companyDiscretionaryData' | 'settlementDate'>;
 type BatchHeaderField<Key extends BatchHeaderKeys = BatchHeaderKeys> = {
     name: CamelToTitleCase<Key>;
 } & BaseFieldParams;
-export type BatchHeaderFieldWithString<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderField<Key> & {
+type BatchHeaderFieldWithString<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderField<Key> & {
     value: string;
 };
-export type BatchHeaderFieldWithNumericalString<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderField<Key> & {
+type BatchHeaderFieldWithNumericalString<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderField<Key> & {
     value: NumericalString;
 };
-export type BatchHeaderFieldWithNumber<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderField<Key> & {
+type BatchHeaderFieldWithNumber<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderField<Key> & {
     value: number;
 };
-export type BatchHeaderFieldWithBlank<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderFieldWithString<Key> & {
+type BatchHeaderFieldWithBlank<Key extends BatchHeaderKeys = BatchHeaderKeys> = BatchHeaderFieldWithString<Key> & {
     blank: boolean;
 };
 export type BatchHeaders = {
@@ -32,29 +29,27 @@ export type BatchHeaders = {
 } & {
     [key in BatchHeaderKeysWithBlankFields]: BatchHeaderFieldWithBlank<key>;
 };
-type BatchControlKeys = 'recordTypeCode' | 'serviceClassCode' | 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit' | 'companyIdentification' | 'messageAuthenticationCode' | 'reserved' | 'originatingDFI' | 'batchNumber';
-export type BatchControlKeysWithStringFields = Extract<BatchControlKeys, 'recordTypeCode' | 'serviceClassCode'>;
-export type BatchControlKeysWithNumberFields = Extract<BatchControlKeys, 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit' | 'batchNumber'>;
-export type BatchControlKeysWithOptionalValue = Extract<BatchControlKeys, 'companyIdentification' | 'originatingDFI'>;
-export type BatchControlKeysWithBlankFields = Extract<BatchControlKeys, 'messageAuthenticationCode' | 'reserved'>;
+export type BatchControlKeys = 'recordTypeCode' | 'serviceClassCode' | 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit' | 'companyIdentification' | 'messageAuthenticationCode' | 'reserved' | 'originatingDFI' | 'batchNumber';
 export type HighLevelControlOverrides = 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit';
+type ControlOverrides = Record<HighLevelControlOverrides, number | undefined>;
+type BatchControlKeysWithStringFields = Extract<BatchControlKeys, 'recordTypeCode' | 'serviceClassCode'>;
+type BatchControlKeysWithNumberFields = Extract<BatchControlKeys, 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit' | 'batchNumber'>;
+type BatchControlKeysWithOptionalValue = Extract<BatchControlKeys, 'companyIdentification' | 'originatingDFI'>;
+type BatchControlKeysWithBlankFields = Extract<BatchControlKeys, 'messageAuthenticationCode' | 'reserved'>;
 type BatchControlField<Key extends BatchControlKeys = BatchControlKeys> = {
     name: CamelToTitleCase<Key>;
     number?: boolean;
 } & BaseFieldParams;
-export type BatchControlFieldWithString<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & {
+type BatchControlFieldWithString<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & {
     value: string;
 };
-export type BatchControlFieldWithNumber<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & {
+type BatchControlFieldWithNumber<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & {
     value: number;
 };
-export type BatchControlFieldWithNumericalString<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & {
-    value: NumericalString;
-};
-export type BatchControlFieldWithOptionalValue<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & {
+type BatchControlFieldWithOptionalValue<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & {
     value?: number | string;
 };
-export type BatchControlFieldWithBlank<Key extends BatchControlKeys = BatchControlKeys> = BatchControlFieldWithString<Key> & {
+type BatchControlFieldWithBlank<Key extends BatchControlKeys = BatchControlKeys> = BatchControlFieldWithString<Key> & {
     blank: boolean;
 };
 export type BatchControls = {
@@ -74,5 +69,10 @@ export type BatchOptions = {
     companyEntryDescription?: string;
     companyDescriptiveDate?: string;
     effectiveEntryDate?: string | Date;
-} & Record<HighLevelHeaderOverrides, string | number | undefined> & Record<HighLevelControlOverrides, string | number | undefined>;
+} & {
+    serviceClassCode?: NumericalString;
+    companyDiscretionaryData?: string;
+    companyIdentification?: string;
+    standardEntryClassCode?: string;
+} & ControlOverrides;
 export {};

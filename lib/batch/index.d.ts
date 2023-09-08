@@ -1,7 +1,7 @@
+import Entry from '../entry/index.js';
 import type { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
 import { control } from './control';
 import { header } from './header';
-import Entry from '../entry/index.js';
 type HeaderKeys = keyof BatchHeaders;
 type ControlKeys = keyof BatchControls;
 export default class Batch {

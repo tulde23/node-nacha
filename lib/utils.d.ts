@@ -1,10 +1,11 @@
 import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions } from './batch/batchTypes.js';
 import Batch from './batch/index.js';
+import achBuilder from './class/achParser.js';
 import { EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
 import EntryAddenda from './entry-addenda/index.js';
 import type { HighLevelFieldOverrides, EntryOptions } from './entry/entryTypes.js';
 import Entry from './entry/index.js';
-export declare function pad<Text extends string = string, padEnd extends boolean = true, Char extends string = ' '>(str: Text, width: number, padRight?: padEnd, padChar?: Char): string;
+export declare function pad<Text extends string | number = string, padEnd extends boolean = true, Char extends string = ' '>(str: Text, width: number, padRight?: padEnd, padChar?: Char): string;
 export declare function computeCheckDigit(routing: `${number}` | number): `${number}`;
 export declare function testRegex(regex: RegExp, field: {
     number?: boolean;
@@ -18,7 +19,18 @@ export declare function parseLine(str: string, object: Record<string, {
 }>): Record<string, string>;
 export declare function compareSets(set1: Set<string>, set2: Set<string>): boolean;
 type BatchOverrides = Array<HighLevelHeaderOverrides> | Array<HighLevelControlOverrides>;
-export declare function overrideLowLevel(values: BatchOverrides, options: BatchOptions, self: Batch): void;
+type BatchOverrideRecord = {
+    header: Array<HighLevelHeaderOverrides>;
+    control: Array<HighLevelControlOverrides>;
+};
+export declare function isBatchOverrides(arg: BatchOverrides | Array<HighLevelFieldOverrides> | Array<HighLevelAddendaFieldOverrides>): arg is BatchOverrides;
+export declare function isBatchHeaderOverrides(arg: Array<HighLevelFieldOverrides> | Array<HighLevelAddendaFieldOverrides> | Array<HighLevelHeaderOverrides> | Array<HighLevelControlOverrides>): arg is Array<HighLevelHeaderOverrides>;
+export declare function isBatchOptions(arg: BatchOptions | EntryOptions | EntryAddendaOptions): arg is BatchOptions;
+export declare function isEntryOverrides(arg: BatchOverrides | BatchOverrideRecord | Array<HighLevelFieldOverrides> | Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelFieldOverrides>;
+export declare function isEntryOptions(arg: BatchOptions | EntryOptions | EntryAddendaOptions): arg is EntryOptions;
+export declare function isEntryAddendaOverrides(arg: BatchOverrides | BatchOverrideRecord | Array<HighLevelFieldOverrides> | Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelAddendaFieldOverrides>;
+export declare function isEntryAddendaOptions(arg: BatchOptions | EntryOptions | EntryAddendaOptions): arg is EntryAddendaOptions;
+export declare function overrideLowLevel(values: Array<HighLevelHeaderOverrides> | Array<HighLevelControlOverrides>, options: BatchOptions, self: Batch | achBuilder<'Batch'>): void;
 export declare function overrideLowLevel(values: Array<HighLevelFieldOverrides>, options: EntryOptions, self: Entry): void;
 export declare function overrideLowLevel(values: Array<HighLevelAddendaFieldOverrides>, options: EntryAddendaOptions, self: EntryAddenda): void;
 export declare function unique(): number;
