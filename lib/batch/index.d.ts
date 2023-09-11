@@ -12,8 +12,8 @@ export default class Batch {
     _validate(): void;
     addEntry(entry: Entry): Promise<void>;
     getEntries(): Entry[];
-    generateHeader(cb: (arg0: string) => void): void;
-    generateControl(cb: (arg0: string) => void): void;
+    generateHeader(cb: (arg0: string) => void): string;
+    generateControl(cb: (arg0: string) => void): string;
     generateEntries(cb: (arg0: string) => void): void;
     generateString(cb: (arg0: string) => void): void;
     isAHeaderField(field: HeaderKeys | ControlKeys): field is HeaderKeys;

@@ -1,13 +1,14 @@
-import { EntryAddendaFieldKeys, EntryAddendaFields, EntryAddendaOptions } from '../entry-addenda/entryAddendaTypes.js';
-import { pad } from '../utils.js';
-import { validateRequiredFields, validateACHAddendaTypeCode, validateLengths, validateDataTypes } from '../validate.js';
+import { NumericalString } from '../Types.js';
+import { EntryAddendaFields, EntryAddendaOptions } from '../entry-addenda/entryAddendaTypes.js';
+import { generateString } from '../utils.js';
+import { validateACHAddendaTypeCode, validateDataTypes, validateLengths, validateRequiredFields } from '../validate.js';
 import achBuilder from './achParser.js';
 
 export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
   fields!: EntryAddendaFields;
 
-  constructor(options: EntryAddendaOptions, autoValidate: boolean = true) {
-    super({ options, name: 'EntryAddenda' });
+  constructor(options: EntryAddendaOptions, autoValidate: boolean = true, debug = false) {
+    super({ options, name: 'EntryAddenda', debug });
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.returnCode) {
@@ -23,7 +24,7 @@ export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
     }
 
     if (options.entryDetailSequenceNumber) {
-      this.fields.entryDetailSequenceNumber.value = Number(options.entryDetailSequenceNumber.toString().slice(0 - this.fields.entryDetailSequenceNumber.width)); // last n digits. pass 
+      this.fields.entryDetailSequenceNumber.value = options.entryDetailSequenceNumber.toString().slice(0 - this.fields.entryDetailSequenceNumber.width) as NumericalString; // last n digits. pass 
     }
 
     // Validate required fields have been passed
@@ -52,32 +53,22 @@ export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
   }
 
   generateString(){
-    let result = '';
-
-    Object.keys(this.fields).forEach((key) => {
-      const field = this.fields[key as EntryAddendaFieldKeys];
-  
-      if (!field.position) return;
-
-      if (('blank' in field && field.blank === true) || field.type === 'alphanumeric') {
-        result += pad(field.value, field.width);
-        return;
-      }
-
-      const string = ('number' in field && field.number === true)
-        ? Number(field.value).toFixed(2)
-        : field.value;
-
-      const paddingChar = field.paddingChar ?? '0';
-
-      result += pad(string, field.width, false, paddingChar);
-    });
-
-    return result;
+    return generateString(this.fields);
   }
 
   get<Key extends keyof EntryAddendaFields = keyof EntryAddendaFields>(field: Key): this['fields'][Key]['value'] {
+    if (this.debug) console.log(`[EntryAddenda:get('${field}')]`, { value: this.fields[field]['value'], field: this.fields[field] });
     return this.fields[field]['value'];
+  }
+
+  set<Key extends keyof EntryAddendaFields>(field: Key, value: EntryAddendaFields[Key]['value']) {
+    if (this.fields[field]) {
+      if (field === 'entryDetailSequenceNumber') {
+        this.fields.entryDetailSequenceNumber['value'] = value.toString().slice(0 - this.fields[field].width) as NumericalString; // pass last n digits
+      } else {
+        this.fields[field]['value'] = value;
+      }
+    }
   }
 }
 

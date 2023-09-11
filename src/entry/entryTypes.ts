@@ -41,11 +41,11 @@ export type EntryFields = {
 
 // Entry Options
 export type EntryOptions = {
-  fields: EntryFields;
+  fields?: EntryFields;
   receivingDFI: NumericalString;
   DFIAccount: string;
   amount: string;
   idNumber: string;
   individualName: string;
   discretionaryData: string;
-} & Record<HighLevelFieldOverrides, string|undefined>;
+} & Record<Exclude<HighLevelFieldOverrides, 'receivingDFI'|'DFIAccount'|'amount'|'idNumber'|'individualName'|'discretionaryData'>, string|undefined>;

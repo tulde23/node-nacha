@@ -1,3 +1,4 @@
+import { NumericalString } from '../Types.js';
 import { EntryAddendaFields } from './entryAddendaTypes.js';
 
 export const fields: Partial<EntryAddendaFields> = {
@@ -34,7 +35,7 @@ export const fields: Partial<EntryAddendaFields> = {
     position: 4,
     required: true,
     type: 'numeric',
-    value: '1',
+    value: 1,
     number: true
   },
 
@@ -45,7 +46,7 @@ export const fields: Partial<EntryAddendaFields> = {
     required: false,
     type: 'numeric',
     blank: true,
-    value: ''
+    value: '' as NumericalString
   }
 };
 

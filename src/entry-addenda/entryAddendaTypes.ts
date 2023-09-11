@@ -4,11 +4,12 @@
 
 import { BaseFieldParams, CamelToTitleCase, NumericalString } from '../Types.js';
 
-export type EntryAddendaFieldKeys = 'recordTypeCode'|'addendaTypeCode'|'paymentRelatedInformation'|'addendaSequenceNumber'|'entryDetailSequenceNumber'|'returnCode';
+export type EntryAddendaFieldKeys = 'recordTypeCode'|'addendaTypeCode'|'returnCode'|'paymentRelatedInformation'|'addendaSequenceNumber'|'entryDetailSequenceNumber';
 
 // Entry Addenda Field Keys with their corresponding value type
 type EntryAddendaFieldKeysWithStringValue = Extract<EntryAddendaFieldKeys, 'paymentRelatedInformation'>;
-type EntryAddendaFieldKeysWithNumericalStringValue = Exclude<EntryAddendaFieldKeys, 'paymentRelatedInformation' | 'entryDetailSequenceNumber'>;
+type EntryAddendaFieldKeysWithNumericalStringValue = Extract<EntryAddendaFieldKeys, 'recordTypeCode'|'addendaTypeCode'|'returnCode'>;
+type EntryAddendaFieldKeysWithNumberValue = Extract<EntryAddendaFieldKeys, 'addendaSequenceNumber'>;
 type EntryAddendaFieldKeysWithNumberValueAndBlank = Extract<EntryAddendaFieldKeys, 'entryDetailSequenceNumber'>;
 
 // Overrides that we will look for in the options object
@@ -17,9 +18,12 @@ export type HighLevelAddendaFieldOverrides = 'addendaTypeCode'|'addendaSequenceN
 type EntryAddendaField<Key extends EntryAddendaFieldKeys = EntryAddendaFieldKeys> = { name: CamelToTitleCase<Key>, number?: boolean, paddingChar?: string } & BaseFieldParams;
 
 // Entry Addenda Fields
-type EntryAddendaFieldWithStringValue<Key extends EntryAddendaFieldKeys = EntryAddendaFieldKeys> = EntryAddendaField<Key> & { value: string; }
-type EntryAddendaFieldWithNumericalStringValue<Key extends EntryAddendaFieldKeys = EntryAddendaFieldKeys> = EntryAddendaField<Key> & { value: NumericalString };
-type EntryAddendaFieldWithBlank<Key extends EntryAddendaFieldKeys = EntryAddendaFieldKeys> = EntryAddendaField<Key> & { value: number|'', blank: boolean; };
+type EntryAddendaFieldWithStringValue<Key extends EntryAddendaFieldKeysWithStringValue = EntryAddendaFieldKeysWithStringValue> = EntryAddendaField<Key> & { value: string; }
+type EntryAddendaFieldWithNumericalStringValue<Key extends EntryAddendaFieldKeysWithNumericalStringValue = EntryAddendaFieldKeysWithNumericalStringValue> = EntryAddendaField<Key> & { value: NumericalString };
+type EntryAddendaFieldWithNumberValue<Key extends EntryAddendaFieldKeysWithNumberValue = EntryAddendaFieldKeysWithNumberValue> = EntryAddendaField<Key> & { value: number; };
+type EntryAddendaFieldWithBlank<Key extends EntryAddendaFieldKeysWithNumberValueAndBlank = EntryAddendaFieldKeysWithNumberValueAndBlank> = EntryAddendaField<Key> & {
+  value: NumericalString, blank: boolean;
+};
 
 // Entry Addenda Fields Object
 export type EntryAddendaFields = {
@@ -27,16 +31,18 @@ export type EntryAddendaFields = {
 } & {
   [key in EntryAddendaFieldKeysWithNumericalStringValue]: EntryAddendaFieldWithNumericalStringValue<key>;
 } & {
-  [key in EntryAddendaFieldKeysWithNumberValueAndBlank]: EntryAddendaFieldWithBlank<key>;
+  [key in EntryAddendaFieldKeysWithNumberValue]: EntryAddendaFieldWithNumberValue<key>;
+} & {
+  entryDetailSequenceNumber: EntryAddendaFieldWithBlank<'entryDetailSequenceNumber'>;
 };
 
 // Entry Options
 export type EntryAddendaOptions = {
-  fields: EntryAddendaFields;
+  fields?: EntryAddendaFields;
   returnCode?: NumericalString;
 } & { // Overrides
   addendaTypeCode?: string;
-  addendaSequenceNumber?: NumericalString;
+  addendaSequenceNumber?: number;
   entryDetailSequenceNumber?: number, // last n digits. pass
   paymentRelatedInformation?: string;
 };

@@ -1,13 +1,14 @@
-import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions } from './batch/batchTypes.js';
-import Batch from './batch/index.js';
-import achBuilder from './class/achParser.js';
-import { EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
-import EntryAddenda from './entry-addenda/index.js';
-import type { HighLevelFieldOverrides, EntryOptions } from './entry/entryTypes.js';
-import Entry from './entry/index.js';
+import { NumericalString } from './Types.js';
+import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions, BatchControls, BatchHeaders, BatchHeaderKeys } from './batch/batchTypes.js';
+import { EntryAddendaFieldKeys, EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
+import type { HighLevelFieldOverrides, EntryOptions, EntryFields, EntryFieldKeys } from './entry/entryTypes.js';
 import nACHError from './error';
 import { highLevelAddendaFieldOverrideSet, highLevelControlOverrideSet, highLevelFieldOverrideSet, highLevelHeaderOverrideSet } from './overrides.js';
 let counter = 0;
+
+export function addNumericalString(valueStringOne: NumericalString, valueStringTwo: NumericalString): NumericalString {
+  return valueStringOne + valueStringTwo as NumericalString;
+}
 
 // Pad a given string to a fixed width using any character or number (defaults to one blank space)
 // Both a string and width are required params for this function, but it also takes two optional
@@ -32,9 +33,11 @@ export function computeCheckDigit(routing: `${number}`|number): `${number}` {
   if (typeof routing === 'number') routing = routing.toString() as `${number}`;
   const a = routing.split('').map(Number);
 
-  return a.length !== 8
+  const value = a.length !== 8
     ? routing
     : routing + (7 * (a[0] + a[3] + a[6]) + 3 * (a[1] + a[4] + a[7]) + 9 * (a[2] + a[5])) % 10 as `${number}`;
+
+    return value;
 }
 
 // This function is passed a field and a regex and tests the field's value property against the given regex
@@ -54,24 +57,51 @@ export function testRegex(regex: RegExp, field: { number?: boolean; value: unkno
 }
 
 // This function iterates through the object passed in and checks to see if it has a "position" property. If so, we pad it, and then concatenate it where belongs.
-export function generateString(object: Record<string, unknown>, cb: (arg0: string) => void) {
+// export function generateString(object: Record<string, unknown>, cb: (arg0: string) => void) {
+//   let result = '';
+
+//   Object.keys(object).forEach(key => {
+//     const field = object[key] as { position: number; blank: boolean; type: string; value: string; width: number; number: number; paddingChar: string; };
+
+//     if (field.position) {
+//       if (field.blank === true || field.type == 'alphanumeric') {
+//         result = result + pad(field.value, field.width);
+//       } else {
+//         const string = field.number ? parseFloat(field.value).toFixed(2).replace(/\./, '') : field.value;
+//         const paddingChar = field.paddingChar || '0';
+//         result = result + pad(string, field.width, false, paddingChar);
+//       }
+//     }
+//   });
+
+//   cb(result);
+// }
+
+export function generateString(object: EntryFields|EntryAddendaFields|BatchHeaders|BatchControls): string {
+  let counter = 1;
   let result = '';
+  const objectCount = Object.keys(object).length;
 
-  Object.keys(object).forEach(key => {
-    const field = object[key] as { position: number; blank: boolean; type: string; value: string; width: number; number: number; paddingChar: string; };
+  while (counter < objectCount) {
+    Object.values(object).forEach((field: EntryFields[EntryFieldKeys]|EntryAddendaFields[EntryAddendaFieldKeys]|BatchHeaders[BatchHeaderKeys]) => {
+      if (field.position === counter) {
+        if (field.value && (('blank' in field && field.blank === true) || field.type === 'alphanumeric')) {
+          result = result + pad(field.value, field.width);
+        } else {
+          const string = ('number' in field && field.number)
+            ? parseFloat(field.value as string).toFixed(2).replace(".", "")
+            : field.value as string;
 
-    if (field.position) {
-      if (field.blank === true || field.type == 'alphanumeric') {
-        result = result + pad(field.value, field.width);
-      } else {
-        const string = field.number ? parseFloat(field.value).toFixed(2).replace(/\./, '') : field.value;
-        const paddingChar = field.paddingChar || '0';
-        result = result + pad(string, field.width, false, paddingChar);
+          const paddingChar = ('paddingChar' in field) ? field.paddingChar : '0';
+
+          result = result + pad(string, field.width, false, paddingChar);
+        }
+        counter++;
       }
-    }
-  });
-
-  cb(result);
+    });
+  }
+  
+  return result;
 }
 
 export function parseLine(str: string, object: Record<string, { width: number; }>) {
@@ -125,16 +155,6 @@ export function isEntryOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<H
   return compareSets(new Set(arg), highLevelFieldOverrideSet);
 }
 
-export function isEntryOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryOptions {
-  if (typeof arg !== 'object') return false;
-  if (Object.keys(arg).length === 0) return false;
-  if ('fields' in arg){
-    if ('amount' in arg.fields) return true;
-  }
-
-  return false;
-}
-
 export function isEntryAddendaOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelAddendaFieldOverrides> {
   if (!Array.isArray(arg)) return false;
   if (arg.length === 0) return false;
@@ -150,41 +170,41 @@ export function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddend
   return false;
 }
 
-export function overrideLowLevel(values: Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>, options: BatchOptions, self: Batch|achBuilder<'Batch'>): void
-export function overrideLowLevel(values: Array<HighLevelFieldOverrides>, options: EntryOptions, self: Entry): void
-export function overrideLowLevel(values: Array<HighLevelAddendaFieldOverrides>, options: EntryAddendaOptions, self: EntryAddenda): void
-export function overrideLowLevel(
-  values: Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>,
-  options: BatchOptions|EntryOptions|EntryAddendaOptions,
-  self: Batch|achBuilder<'Batch'>|Entry|EntryAddenda
-): void {
-  if (!Array.isArray(values)) throw new Error('overrideLowLevel() requires an array of values to override');
-  if (typeof options !== 'object') throw new Error('overrideLowLevel() requires an object of options to override');
-  if (typeof self !== 'object') throw new Error('overrideLowLevel() requires an object to override');
+// export function overrideLowLevel(values: Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>, options: BatchOptions, self: Batch|achBuilder<'Batch'>): void
+// export function overrideLowLevel(values: Array<HighLevelFieldOverrides>, options: EntryOptions, self: Entry): void
+// export function overrideLowLevel(values: Array<HighLevelAddendaFieldOverrides>, options: EntryAddendaOptions, self: EntryAddenda): void
+// export function overrideLowLevel(
+//   values: Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>,
+//   options: BatchOptions|EntryOptions|EntryAddendaOptions,
+//   self: Batch|achBuilder<'Batch'>|Entry|EntryAddenda
+// ): void {
+//   if (!Array.isArray(values)) throw new Error('overrideLowLevel() requires an array of values to override');
+//   if (typeof options !== 'object') throw new Error('overrideLowLevel() requires an object of options to override');
+//   if (typeof self !== 'object') throw new Error('overrideLowLevel() requires an object to override');
 
-  if (values.length === 0) return;
-  if (Object.keys(options).length === 0) return;
-  if (Object.keys(self).length === 0) return;
+//   if (values.length === 0) return;
+//   if (Object.keys(options).length === 0) return;
+//   if (Object.keys(self).length === 0) return;
 
-  if (isBatchOverrides(values) && isBatchOptions(options) && (self instanceof Batch || self instanceof achBuilder)) {
-    // For each override value, check to see if it exists on the options object & if so, set it
-    values.forEach((field) => {
-      if (options[field]) self.set(field, options[field] as string|number);
-    });
-  }
+//   if (isBatchOverrides(values) && isBatchOptions(options) && (self instanceof Batch || self instanceof achBuilder)) {
+//     // For each override value, check to see if it exists on the options object & if so, set it
+//     values.forEach((field) => {
+//       if (options[field]) self.set(field, options[field] as string|number);
+//     });
+//   }
   
-  if (isEntryOverrides(values) && isEntryOptions(options) && self instanceof Entry) {
-    values.forEach((field) => {
-      if (options[field]) self.set(field, options[field] as string);
-    });
-  }
+//   if (isEntryOverrides(values) && isEntryOptions(options) && self instanceof Entry) {
+//     values.forEach((field) => {
+//       if (options[field]) self.set(field, options[field] as string);
+//     });
+//   }
 
-  if (isEntryAddendaOverrides(values) && isEntryAddendaOptions(options) && self instanceof EntryAddenda) {
-    values.forEach((field) => {
-      if (options[field]) self.set(field, options[field] as string);
-    });
-  }
-}
+//   if (isEntryAddendaOverrides(values) && isEntryAddendaOptions(options) && self instanceof EntryAddenda) {
+//     values.forEach((field) => {
+//       if (options[field]) self.set(field, options[field] as string);
+//     });
+//   }
+// }
 
 export function unique() { return counter++; }
 
@@ -235,17 +255,22 @@ export const computeBusinessDay = function(businessDays: number, startingDate?: 
 export function newLineChar() { return '\r\n'; }
 
 module.exports = {
+  addNumericalString,
+  isBatchHeaderOverrides,
+  isBatchOptions,
+  isEntryAddendaOptions,
+  isEntryAddendaOverrides,
+  isEntryOverrides,
   pad,
   unique,
-  testRegex: testRegex,
+  testRegex,
   formatDate,
   formatTime,
   newLineChar,
   generateString,
   parseLine,
   getNextMultiple,
-  overrideLowLevel,
   computeCheckDigit,
   computeBusinessDay,
-  getNextMultipleDiff: getNextMultipleDiff,
+  getNextMultipleDiff,
 }

@@ -1,7 +1,8 @@
-import { EntryFields, EntryOptions } from '../entry/entryTypes.js';
+import { NumericalString } from '../Types.js';
+import { EntryFieldKeys, EntryFields, EntryOptions } from '../entry/entryTypes.js';
 import nACHError from '../error.js';
-import { computeCheckDigit } from '../utils.js';
-import { validateRequiredFields, validateACHCode, validateACHAddendaCode, validateRoutingNumber, validateLengths, validateDataTypes } from '../validate.js';
+import { addNumericalString, computeCheckDigit, generateString, pad } from '../utils.js';
+import { validateACHAddendaCode, validateACHCode, validateDataTypes } from '../validate.js';
 import EntryAddenda from './EntryAddenda.js';
 import achBuilder from './achParser.js';
 
@@ -9,13 +10,13 @@ export default class Entry extends achBuilder<'Entry'>{
   fields!: EntryFields;
   _addendas: Array<EntryAddenda> = [];
 
-  constructor(options: EntryOptions, autoValidate: boolean = true) {
-    super({ options, name: 'Entry' });
+  constructor(options: EntryOptions, autoValidate = true, debug = false) {
+    super({ options: options, name: 'Entry', debug });
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.receivingDFI) {
-      this.fields.receivingDFI.value = computeCheckDigit(options.receivingDFI).slice(0, -1) as `${number}`;
-      this.fields.checkDigit.value = computeCheckDigit(options.receivingDFI).slice(-1) as `${number}`;
+      this.fields.receivingDFI.value = computeCheckDigit(options.receivingDFI).slice(0, -1) as NumericalString;
+      this.fields.checkDigit.value = computeCheckDigit(options.receivingDFI).slice(-1) as NumericalString;
     }
 
     if (options.DFIAccount) {
@@ -45,20 +46,15 @@ export default class Entry extends achBuilder<'Entry'>{
   }
 
   addAddenda(entryAddenda: EntryAddenda) {
-
     const traceNumber = this.get('traceNumber');
+    console.info({ traceNumber})
 
     // Add indicator to Entry record
     this.set('addendaId', '1');
   
     // Set corresponding fields on Addenda
-    entryAddenda.set('addendaSequenceNumber', `${this._addendas.length + 1}`);
-
-    if (typeof traceNumber === 'number'){
-      entryAddenda.set('entryDetailSequenceNumber', traceNumber);
-    } else {
-      entryAddenda.set('entryDetailSequenceNumber', Number(traceNumber));
-    }
+    entryAddenda.set('addendaSequenceNumber', this._addendas.length + 1);
+    entryAddenda.set('entryDetailSequenceNumber', (typeof traceNumber === 'number') ? traceNumber : Number(traceNumber));
   
     // Add the new entryAddenda to the addendas array
     this._addendas.push(entryAddenda);
@@ -69,8 +65,10 @@ export default class Entry extends achBuilder<'Entry'>{
   getRecordCount() { return this._addendas.length + 1; }
 
   _validate() {
+    const { validations } = this;
+
     // Validate required fields
-    validateRequiredFields(this.fields);
+    validations.validateRequiredFields(this.fields);
   
     // Validate the ACH code passed
     if (this.fields.addendaId.value == '0') {
@@ -89,17 +87,32 @@ export default class Entry extends achBuilder<'Entry'>{
     }
   
     // Validate the routing number
-    validateRoutingNumber(Number(this.fields.receivingDFI.value) + Number(this.fields.checkDigit.value));
+    validations.validateRoutingNumber(
+      addNumericalString(this.fields.receivingDFI.value, this.fields.checkDigit.value)
+    );
   
     // Validate header field lengths
-    validateLengths(this.fields);
-  
+    validations.validateLengths(this.fields);
+
     // Validate header data types
     validateDataTypes(this.fields);
   }
 
   generateString(){
-    return this._addendas.map(((addenda) => addenda.generateString()));
+    const result = generateString(this.fields);
+
+    return [
+      result,
+      this._addendas.map(((addenda) => addenda.generateString())).join('\n')
+    ].join('\n');
+  }
+
+  get<Key extends keyof EntryFields = keyof EntryFields>(field: Key): this['fields'][Key]['value'] {
+    return this.fields[field]['value'];
+  }
+
+  set<Key extends keyof EntryFields = keyof EntryFields>(field: Key, value: this['fields'][Key]['value']) {
+    if (this.fields[field]) this.fields[field]['value'] = value;
   }
 }
 module.exports = Entry;

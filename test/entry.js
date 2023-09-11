@@ -15,6 +15,8 @@ describe('Entry', function() {
         individualName: 'Glen Selle',
         discretionaryData: 'A1'
       })
+
+      console.log({ entry })
       
       const asString = entry.generateString();
       console.log('OFUCKF', asString)
