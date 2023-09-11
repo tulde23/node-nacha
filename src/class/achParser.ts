@@ -5,6 +5,7 @@ import { EntryAddendaFieldKeys, EntryAddendaFields, EntryAddendaOptions, HighLev
 import { fields as entryAddendaFields } from '../entry-addenda/fields.js';
 import { EntryFieldKeys, EntryFields, EntryOptions, HighLevelFieldOverrides } from '../entry/entryTypes.js';
 import { fields as entryFields } from '../entry/fields.js';
+import nACHError from '../error.js';
 import { highLevelAddendaFieldOverrides, highLevelControlOverrides, highLevelFieldOverrides, highLevelHeaderOverrides } from '../overrides.js';
 import { isBatchOptions, isEntryAddendaOptions, isEntryAddendaOverrides, isEntryOptions, isEntryOverrides } from '../utils.js';
 
@@ -121,20 +122,26 @@ export default class achBuilder<
     }
   }
 
-  categoryIsKeyOfEntryAddendaFields(category: keyof EntryAddendaFields|keyof EntryFields|keyof Headers|keyof Controls): category is keyof EntryAddendaFields {
-    return (this.name === 'EntryAddenda' && this.fields !== undefined && category in this.fields);
-  }
+  validateRequiredFields(object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls) {
 
-  categoryIsKeyOfEntryFields(category: keyof EntryFields|keyof EntryAddendaFields|keyof Headers|keyof Controls): category is keyof EntryFields {
-    return (this.name === 'Entry' && this.fields !== undefined && category in this.fields);
-  }
-
-  categoryIsKeyOfHeaders(category: keyof Fields|keyof Headers|keyof Controls): category is keyof Headers {
-    return (this.name === 'Batch' && this.header !== undefined && category in this.header)
-  }
-
-  categoryIsKeyOfControls(category: keyof Fields|keyof Headers|keyof Controls): category is keyof Controls {
-    return (this.name === 'Batch' && this.control !== undefined && category in this.control)
+    Object.keys(object).forEach((k) => {
+      const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
+      // This check ensures a required field's value is not NaN, null, undefined or empty.
+      // Zero is valid, but the data type check will make sure any fields with 0 are numeric.
+      if (
+          ('required' in field && typeof field.required === 'boolean' && field.required === true)
+          && (('value' in field === false) || (!field.value) || field.value.toString().length === 0)
+        ) {
+        console.error('[nACH Error]', { field });
+  
+        throw new nACHError({
+          name: 'Required Field Blank',
+          message: `${field.name} is a required field but its value is: ${field.value}`
+        });
+      }
+    });
+  
+    return true;
   }
 
   get(field: DataStruct extends 'EntryAddenda'

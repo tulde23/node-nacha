@@ -1,12 +1,12 @@
 const chai = require('chai');
 const expect = chai.expect;
-const Entry = require('../lib/entry');
-const EntryAddenda = require('../lib/entry-addenda');
+const Entry = require('../lib/class/Entry.js');
+const EntryAddenda = require('../lib/class/EntryAddenda.js');
 
 describe('Entry', function() {
   describe('Create Entry', function() {
     it('should create an entry successfully', function() {
-      new Entry({
+      const entry = new Entry({
         receivingDFI: '081000210',
         DFIAccount: '12345678901234567',
         amount: '3521',
@@ -14,9 +14,10 @@ describe('Entry', function() {
         idNumber: 'RAj##23920rjf31',
         individualName: 'Glen Selle',
         discretionaryData: 'A1'
-      }).generateString((string) => {
-        console.log('[Test::entry.js:Create Entry-1]', string);
-      });
+      })
+      
+      const asString = entry.generateString();
+      console.log('OFUCKF', asString)
     });
   });
 
