@@ -1,7 +1,8 @@
-import { formatDate, formatTime } from '../utils';
+import { formatDateToYYMMDD, formatTime } from '../utils';
+import { FileHeaders } from './FileTypes.js';
 
 // The date/time defaults are dynamic, so always create a new object
-module.exports = function() {
+const fileHead = (): FileHeaders => {
   return {
     recordTypeCode: {
       name: 'Record Type Code',
@@ -47,7 +48,7 @@ module.exports = function() {
       position: 5,
       required: true,
       type: 'numeric',
-      value: formatDate(new Date())
+      value: formatDateToYYMMDD(new Date())
     },
 
     fileCreationTime: {
@@ -60,7 +61,7 @@ module.exports = function() {
     },
 
     fileIdModifier: {
-      name: 'File Modifier',
+      name: 'File Modifier' as 'File Id Modifier',
       width: 1,
       position: 7,
       required: true,
@@ -123,3 +124,6 @@ module.exports = function() {
     }
   };
 };
+
+export const fileHeaders = fileHead();
+module.exports = { fileHeaders };

@@ -1,8 +1,8 @@
 import { NumericalString } from '../Types.js';
-import { EntryFieldKeys, EntryFields, EntryOptions } from '../entry/entryTypes.js';
+import { EntryFields, EntryOptions } from '../entry/entryTypes.js';
 import nACHError from '../error.js';
-import { addNumericalString, computeCheckDigit, generateString, pad } from '../utils.js';
-import { validateACHAddendaCode, validateACHCode, validateDataTypes } from '../validate.js';
+import { addNumericalString, computeCheckDigit, generateString } from '../utils.js';
+import { validateACHCode, validateDataTypes } from '../validate.js';
 import EntryAddenda from './EntryAddenda.js';
 import achBuilder from './achParser.js';
 
@@ -54,7 +54,7 @@ export default class Entry extends achBuilder<'Entry'>{
   
     // Set corresponding fields on Addenda
     entryAddenda.set('addendaSequenceNumber', this._addendas.length + 1);
-    entryAddenda.set('entryDetailSequenceNumber', (typeof traceNumber === 'number') ? traceNumber : Number(traceNumber));
+    entryAddenda.set('entryDetailSequenceNumber', traceNumber);
   
     // Add the new entryAddenda to the addendas array
     this._addendas.push(entryAddenda);
@@ -82,7 +82,8 @@ export default class Entry extends achBuilder<'Entry'>{
       }
     } else {
       if (this.fields.transactionCode.value){
-        validateACHAddendaCode(this.fields.transactionCode.value);
+        //  validateACHAddendaCode(this.fields.transactionCode.value);
+        //! - this didn't do anything in the base library
       }
     }
   

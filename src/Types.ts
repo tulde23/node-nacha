@@ -9,4 +9,4 @@ export type CamelToTitleCase<Text extends string, $Acc extends string = ''> =
 /** Primitives */
 export type NumericalString = `${number}`;
 
-export type BaseFieldParams = { width: number; position: number; required: boolean; type: 'numeric'|'alphanumeric'|'alpha'; }
+export type BaseFieldParams = { width: number; position: number; required: boolean; type: 'numeric'|'alphanumeric'|'alpha'|'ABA'; }

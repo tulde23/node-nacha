@@ -1,4 +1,6 @@
-module.exports = {
+import { FileControls } from './FileTypes.js';
+
+export const fileControls: FileControls = {
   recordTypeCode: {
     name: 'Record Type Code',
     width: 1,
@@ -66,3 +68,5 @@ module.exports = {
     value: ''
   }
 };
+
+module.exports = { fileControls }

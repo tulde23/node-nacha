@@ -8,9 +8,10 @@ import { BatchControls, BatchHeaders } from './batch/batchTypes.js';
 
 const ACHAddendaTypeCodes = ['02', '05', '98', '99'] as Array<NumericalString>;
 const ACHTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39'] as Array<NumericalString>;
-const ACHServiceClassCodes = ['200', '220', '225'] as Array<NumericalString>;
+
 const numericRegex = /^[0-9]+$/;
 const alphaRegex = /^[a-zA-Z]+$/;
+// eslint-disable-next-line no-useless-escape
 const alphanumericRegex = /(^[0-9a-zA-Z!"#$%&'()*+,-.\/:;<>=?@\[\]\\^_`{}|~ ]+$)|(^$)/;
 
 // Validate required fields to make sure they have values
@@ -103,7 +104,7 @@ export function validateACHCode(transactionCode: NumericalString) {
 }
 
 // Insure a given transaction code is valid
-export function validateACHAddendaCode(transactionCode: NumericalString) {
+// export function validateACHAddendaCode(transactionCode: NumericalString) {
   // if (transactionCode.length !== 2 || !_.includes(ACHTransactionCodes, transactionCode)) {
   //   throw new nACHError({
   //     name: 'ACH Transaction Code Error',
@@ -111,19 +112,8 @@ export function validateACHAddendaCode(transactionCode: NumericalString) {
   //   });
   // }
 
-  return true;
-} //? WTF is this function for?
-
-export function validateACHServiceClassCode(serviceClassCode: NumericalString) {
-  if (serviceClassCode.length !== 3 || ACHServiceClassCodes.includes(serviceClassCode) === false) {
-    throw new nACHError({
-      name: 'ACH Service Class Code Error',
-      message: `The ACH service class code ${serviceClassCode} is invalid. Please pass a valid 3-digit service class code.`,
-    });
-  }
-
-  return true;
-}
+//   return true;
+// } //? WTF is this function for?
 
 export function validateRoutingNumber(routing: NumericalString|number) {
   if (typeof routing === 'number') routing = routing.toString() as NumericalString;
@@ -162,8 +152,6 @@ module.exports = {
   validateDataTypes,
   validateACHAddendaTypeCode,
   validateACHCode,
-  validateACHAddendaCode,
-  validateACHServiceClassCode,
   validateRoutingNumber,
   getNextMultipleDiff,
 }

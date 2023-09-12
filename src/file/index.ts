@@ -1,50 +1,13 @@
 // File
 
-const fs = require('fs');
-const _ = require('lodash');
-const async = require('async');
-const utils = require('../utils');
-const validate = require('../validate');
-const highLevelOverrides = ['immediateDestination', 'immediateOrigin', 'fileCreationDate', 'fileCreationTime', 'fileIdModifier', 'immediateDestinationName', 'immediateOriginName', 'referenceCode'];
-const Batch = require('../batch');
-const Entry = require('../entry');
-const Addenda = require('../entry-addenda');
+import * as utils from '../utils.js';
+import Batch from '../batch/index.js';
+import Entry from '../class/Entry.js';
+import { fileControl } from './control.js';
+import { fileHeader } from './header.js';
+import File from '../class/File.js'
 
-const fileHeader = require('./header');
-const fileControl = require('./control');
-
-const batchHeader = require('./../batch/header');
-const batchControl = require('./../batch/control');
-
-const entryFields = require('./../entry/fields');
-const addendaFields = require('./../entry-addenda/fields');
-
-function File(options, autoValidate) {
-  this._batches = [];
-
-  // Allow the batch header/control defaults to be overriden if provided
-  this.header = options.header ? _.merge(options.header, fileHeader(), _.defaults) : fileHeader();
-  this.control = options.control ? _.merge(options.header, fileControl, _.defaults) : _.cloneDeep(fileControl);
-
-  // Configure high-level overrides (these override the low-level settings if provided)
-  utils.overrideLowLevel(highLevelOverrides, options, this);
-
-  // This is done to make sure we have a 9-digit routing number
-  if (options.immediateDestination) {
-    this.header.immediateDestination.value = utils.computeCheckDigit(options.immediateDestination);
-  }
-
-  this._batchSequenceNumber = Number(options.batchSequenceNumber) || 0
-
-  if (autoValidate !== false) {
-    // Validate all values
-    this._validate();
-  }
-
-  return this;
-}
-
-File.prototype.get = function(field) {
+File.prototype.get = function(field: string | number) {
 
   // If the header has the field, return the value
   if (this.header[field]) {
@@ -57,7 +20,7 @@ File.prototype.get = function(field) {
   }
 };
 
-File.prototype.set = function(field, value) {
+File.prototype.set = function(field: string | number, value: any) {
 
   // If the header has the field, set the value
   if (this.header[field]) {
@@ -70,49 +33,8 @@ File.prototype.set = function(field, value) {
   }
 };
 
-File.prototype._validate = function() {
 
-  // Validate header field lengths
-  validate.validateLengths(this.header);
-
-  // Validate header data types
-  validate.validateDataTypes(this.header);
-
-  // Validate control field lengths
-  validate.validateLengths(this.control);
-
-  // Validate header data types
-  validate.validateDataTypes(this.control);
-};
-
-File.prototype.addBatch = function(batch) {
-
-  // Set the batch number on the header and control records
-  batch.header.batchNumber.value = this._batchSequenceNumber
-  batch.control.batchNumber.value = this._batchSequenceNumber
-
-  // Increment the batchSequenceNumber
-  ++this._batchSequenceNumber
-
-  this._batches.push(batch);
-};
-
-File.prototype.getBatches = function() {
-  return this._batches;
-}
-
-File.prototype.generatePaddedRows = function(rows, cb) {
-  let paddedRows = '';
-
-  for (let i = 0; i < rows; i++) {
-    paddedRows += utils.newLineChar() + utils.pad('', 94, '9');
-  }
-
-  // Return control flow back by calling the callback function
-  cb(paddedRows);
-}
-
-File.prototype.generateBatches = function(done1) {
+File.prototype.generateBatches = function(done1: (arg0: string, arg1: number) => void) {
   const self = this;
 
   let result = '';
@@ -124,11 +46,11 @@ File.prototype.generateBatches = function(done1) {
   let totalDebit = 0;
   let totalCredit = 0;
 
-  async.each(this._batches, function(batch, done2) {
+  async.each(this._batches, function(batch: { control: { totalDebit: { value: number; }; totalCredit: { value: number; }; }; _entries: string | any[]; generateString: (arg0: (batchString: any) => void) => void; }, done2: () => void) {
     totalDebit += batch.control.totalDebit.value;
     totalCredit += batch.control.totalCredit.value;
 
-    async.each(batch._entries, function(entry, done3) {
+    async.each(batch._entries, function(entry: { fields: { traceNumber: { value: any; }; receivingDFI: { value: any; }; }; }, done3: () => void) {
       entry.fields.traceNumber.value = (entry.fields.traceNumber.value) ? entry.fields.traceNumber.value : self.header.immediateOrigin.value.slice(0, 8) + utils.pad(addendaCount, 7, false, '0');
       entryHash += Number(entry.fields.receivingDFI.value);
 
@@ -137,7 +59,7 @@ File.prototype.generateBatches = function(done1) {
       rows++;
 
       done3();
-    }, function(err) {
+    }, function(err: any) {
 
       // Only iterate and generate the batch if there is at least one entry in the batch
       if (batch._entries.length > 0) {
@@ -149,7 +71,7 @@ File.prototype.generateBatches = function(done1) {
         rows = rows + 2;
 
         // Generate the batch after we've added the trace numbers
-        batch.generateString(function(batchString) {
+        batch.generateString(function(batchString: any) {
           result += batchString + utils.newLineChar();
           done2();
         });
@@ -157,7 +79,7 @@ File.prototype.generateBatches = function(done1) {
         done2();
       }
     });
-  }, function(err) {
+  }, function(err: any) {
     self.control.totalDebit.value = totalDebit;
     self.control.totalCredit.value = totalCredit;
 
@@ -172,29 +94,17 @@ File.prototype.generateBatches = function(done1) {
   });
 };
 
-File.prototype.generateHeader = function(cb) {
-  utils.generateString(this.header, function(string) {
-    cb(string);
-  });
-};
-
-File.prototype.generateControl = function(cb) {
-  utils.generateString(this.control, function(string) {
-    cb(string);
-  });
-};
-
-File.prototype.generateFile = function(cb) {
+File.prototype.generateFile = function(cb: (arg0: undefined, arg1: any) => any) {
   const self = this;
   return new Promise(function(resolve) {
-    self.generateHeader(function(headerString) {
-      self.generateBatches(function(batchString, rows) {
-        self.generateControl(function(controlString) {
+    self.generateHeader(function(headerString: any) {
+      self.generateBatches(function(batchString: any, rows: any) {
+        self.generateControl(function(controlString: any) {
 
           // These must be within this callback otherwise rows won't be calculated yet
           const paddedRows = utils.getNextMultipleDiff(rows, 10);
 
-          self.generatePaddedRows(paddedRows, function(paddedString) {
+          self.generatePaddedRows(paddedRows, function(paddedString: any) {
             const str = headerString + utils.newLineChar() + batchString + controlString + paddedString;
             cb && cb(undefined, str);
             resolve(str);
@@ -205,15 +115,15 @@ File.prototype.generateFile = function(cb) {
   })
 };
 
-File.prototype.writeFile = function(path, cb) {
+File.prototype.writeFile = function(path: any, cb: (arg0: any) => any) {
   const self = this;
   return new Promise(function(resolve, reject) {
-    self.generateFile(function(err, fileSting) {
+    self.generateFile(function(err: any, fileSting: any) {
       if (err) {
         reject(err);
         return cb && cb(err);
       }
-      fs.writeFile(path, fileSting, function(err) {
+      fs.writeFile(path, fileSting, function(err: any) {
         if (err) {
           reject(err);
           return cb && cb(err);
@@ -224,9 +134,9 @@ File.prototype.writeFile = function(path, cb) {
   });
 };
 
-File.parseFile = function(filePath, cb) {
+File.parseFile = function(filePath: any, cb: (arg0: any) => any) {
   return new Promise(function(resolve, reject) {
-    fs.readFile(filePath, function(err, data) {
+    fs.readFile(filePath, function(err: any, data: { toString: () => any; }) {
       if (err) {
         reject(err);
         return cb && cb(err);
@@ -236,7 +146,7 @@ File.parseFile = function(filePath, cb) {
   })
 }
 
-File.parse = function(str, cb) {
+File.parse = function(str: string, cb: (arg0: unknown, arg1: File | undefined) => any) {
   return new Promise(function(resolve, reject) {
     if (!str || !str.length) {
       reject('Input string is empty');
@@ -250,10 +160,10 @@ File.parse = function(str, cb) {
       }
     }
     const file = {};
-    const batches = [];
+    const batches: { entry: string | any[]; }[] = [];
     let batchIndex = 0;
     let hasAddenda = false;
-    lines.forEach(function(line) {
+    lines.forEach(function(line: string | any[]) {
       if (!line || !line.length) {
         return;
       }
@@ -295,7 +205,7 @@ File.parse = function(str, cb) {
       return cb && cb('No batches found');
     }
     try {
-      let nachFile;
+      let nachFile: unknown;
       if (!hasAddenda) {
         nachFile = new File(file.header);
       } else {
@@ -304,7 +214,7 @@ File.parse = function(str, cb) {
 
       batches.forEach(function(batchOb) {
         const batch = new Batch(batchOb.header);
-        batchOb.entry.forEach(function(entry) {
+        batchOb.entry.forEach(function(entry: any) {
           batch.addEntry(entry);
         });
         nachFile.addBatch(batch);

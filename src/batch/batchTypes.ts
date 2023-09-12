@@ -49,10 +49,10 @@ type BatchControlKeysWithBlankFields = Extract<BatchControlKeys, 'messageAuthent
 // Batch Control Fields
 type BatchControlField<Key extends BatchControlKeys = BatchControlKeys> = { name: CamelToTitleCase<Key>, number?: boolean } & BaseFieldParams;
 // Batch Control Fields with their corresponding value type
-type BatchControlFieldWithString<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value: string; };
-type BatchControlFieldWithNumber<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value: number; };
-type BatchControlFieldWithOptionalValue<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value?: number|string };
-type BatchControlFieldWithBlank<Key extends BatchControlKeys = BatchControlKeys> = BatchControlFieldWithString<Key> & { blank: boolean; };
+export type BatchControlFieldWithString<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value: string; };
+export type BatchControlFieldWithNumber<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value: number; };
+export type BatchControlFieldWithOptionalValue<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value?: number|string };
+export type BatchControlFieldWithBlank<Key extends BatchControlKeys = BatchControlKeys> = BatchControlFieldWithString<Key> & { blank: boolean; };
 
 // Batch Controls
 export type BatchControls = { [key in BatchControlKeysWithStringFields]: BatchControlFieldWithString<key>; }

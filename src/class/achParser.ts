@@ -7,8 +7,19 @@ import { fields as entryAddendaFields } from '../entry-addenda/fields.js';
 import { EntryFieldKeys, EntryFields, EntryOptions, HighLevelFieldOverrides } from '../entry/entryTypes.js';
 import { fields as entryFields } from '../entry/fields.js';
 import nACHError from '../error.js';
-import { highLevelAddendaFieldOverrides, highLevelControlOverrides, highLevelFieldOverrides, highLevelHeaderOverrides } from '../overrides.js';
-import { isBatchOptions, isEntryAddendaOptions, isEntryAddendaOverrides, isEntryOverrides } from '../utils.js';
+import { FileControlKeys, FileControls, FileHeaderKeys, FileHeaders, FileOptions, HighLevelFileOverrides } from '../file/FileTypes.js';
+import { fileControls } from '../file/control.js';
+import { fileHeaders } from '../file/header.js';
+import { highLevelAddendaFieldOverrideSet, highLevelAddendaFieldOverrides, highLevelControlOverrides, highLevelFieldOverrideSet, highLevelFieldOverrides, highLevelFileOverrideSet, highLevelFileOverrides, highLevelHeaderOverrides } from '../overrides.js';
+import { compareSets, testRegex } from '../utils.js';
+
+const numericRegex = /^[0-9]+$/;
+const alphaRegex = /^[a-zA-Z]+$/;
+// eslint-disable-next-line no-useless-escape
+const alphanumericRegex = /(^[0-9a-zA-Z!"#$%&'()*+,-.\/:;<>=?@\[\]\\^_`{}|~ ]+$)|(^$)/;
+
+type BatchOverrides = Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>
+type BatchOverrideRecord = { header: Array<HighLevelHeaderOverrides>, control: Array<HighLevelControlOverrides> }
 
 interface DataMap {
   EntryAddenda: {
@@ -35,10 +46,18 @@ interface DataMap {
     header: BatchHeaders,
     control: BatchControls,
   },
+  File: {
+    options: FileOptions,
+    overrides: Array<HighLevelFileOverrides>,
+    key: ['header','control']
+    fields: undefined,
+    header: FileHeaders,
+    control: FileControls,
+  }
 }
 
 export default class achBuilder<
-  DataStruct extends 'Entry'|'EntryAddenda'|'Batch',
+  DataStruct extends 'Entry'|'EntryAddenda'|'Batch'|'File',
   Options extends DataMap[DataStruct]['options'] = DataMap[DataStruct]['options'],
   Overrides extends DataMap[DataStruct]['overrides'] = DataMap[DataStruct]['overrides'],
   Fields extends DataMap[DataStruct]['fields'] = DataMap[DataStruct]['fields'],
@@ -54,7 +73,7 @@ export default class achBuilder<
   debug = false;
 
   typeGuards = {
-    isEntryOptions: (arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryOptions => {
+    isEntryOptions: (arg: FileOptions|BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryOptions => {
       if (typeof arg !== 'object'){
         if (this.debug) console.debug('isEntryOptions() failed because arg is not an object');
         return false;
@@ -69,17 +88,49 @@ export default class achBuilder<
       if (this.debug) console.debug('isEntryOptions() failed because arg has no amount key', { arg });
       return false;
     },
-    isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryAddendaOptions {
+    isEntryAddendaOptions(arg: FileOptions|BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryAddendaOptions {
       if (typeof arg !== 'object') return false;
       if (Object.keys(arg).length === 0) return false;
       if ('paymentRelatedInformation' in arg) return true;
     
       return false;
+    },
+    isBatchOptions(arg: FileOptions|BatchOptions|EntryOptions|EntryAddendaOptions): arg is BatchOptions {
+      if (typeof arg !== 'object') return false;
+      if (Object.keys(arg).length === 0) return false;
+      if ('originatingDFI' in arg) return true;
+    
+      return false;
+    },
+    isFileOptions(arg: FileOptions|BatchOptions|EntryOptions|EntryAddendaOptions): arg is FileOptions {
+      if (typeof arg !== 'object') return false;
+      if (Object.keys(arg).length === 0) return false;
+      if ('immediateDestination' in arg) return true;
+    
+      return false;
+    },
+    isEntryOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>|Array<HighLevelFileOverrides>): arg is Array<HighLevelFieldOverrides> {
+      if (!Array.isArray(arg)) return false;
+      if (arg.length === 0) return false;
+    
+      return compareSets(new Set(arg), highLevelFieldOverrideSet);
+    },
+    isEntryAddendaOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>|Array<HighLevelFileOverrides>): arg is Array<HighLevelAddendaFieldOverrides> {
+      if (!Array.isArray(arg)) return false;
+      if (arg.length === 0) return false;
+      
+      return compareSets(new Set(arg), highLevelAddendaFieldOverrideSet);
+    },
+    isFileOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>|Array<HighLevelFileOverrides>): arg is Array<HighLevelFileOverrides> {
+      if (!Array.isArray(arg)) return false;
+      if (arg.length === 0) return false;
+
+      return compareSets(new Set(arg), highLevelFileOverrideSet);
     }
   }
 
   validations = {
-    validateRequiredFields:  (object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls) => {
+    validateRequiredFields:  (object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls|FileHeaders|FileControls) => {
       Object.keys(object).forEach((k) => {
         const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
         // This check ensures a required field's value is not NaN, null, undefined or empty.
@@ -136,7 +187,7 @@ export default class achBuilder<
     
       return true;
     },
-    validateLengths: (object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls) => {
+    validateLengths: (object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls|FileHeaders|FileControls) => {
       Object.keys(object).forEach((k) => {
         const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
     
@@ -145,6 +196,27 @@ export default class achBuilder<
             name: 'Invalid Length',
             message: `${field.name}'s length is ${typeof field.value === 'number' ? field.value.toString().length : field.value.length}, but it should be no greater than ${field.width}.`
           });
+        }
+      });
+    
+      return true;
+    },
+    validateDataTypes(object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls|FileHeaders|FileControls) {
+      Object.keys(object).forEach((k) => {
+        const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
+    
+        if ('blank' in field && field.blank !== true) {
+          switch (field.type) {
+            case 'numeric': { testRegex(numericRegex, field); break; }
+            case 'alpha': { testRegex(alphaRegex, field); break; }
+            case 'alphanumeric':{ testRegex(alphanumericRegex, field); break; }
+            default: {
+              throw new nACHError({
+                name: 'Invalid Data Type',
+                message: `${field.name}'s data type is required to be ${field.type as string}, but its contents don't reflect that.`
+              });
+            }
+          }
         }
       });
     
@@ -177,6 +249,15 @@ export default class achBuilder<
       this.control = ((options as BatchOptions).control)
         ? { ...(options as BatchOptions).control, ...control } as Controls
         : { ...control } as Controls;
+    } else if (this.name === 'File') {
+      this.overrides = highLevelFileOverrides as Overrides;
+
+      this.header = ((options as FileOptions).header)
+        ? { ...(options as FileOptions).header, ...fileHeaders } as Headers
+        : { ...header } as Headers;
+      this.control = ((options as FileOptions).control)
+        ? { ...(options as FileOptions).control, ...fileControls } as Controls
+        : { ...control } as Controls;
     }
 
     this.overrideOptions();
@@ -185,26 +266,52 @@ export default class achBuilder<
   overrideOptions(){
     const { name, overrides, options, typeGuards } = this;
 
-    if (name === 'Batch'
-    && ('header' in overrides && 'control' in overrides)
-    && ('header' in this && 'control' in this)
-    && isBatchOptions(options)
-    ){
-      overrides.header.forEach((field) => {
-        if (options[field]) this.set<'Batch', 'header'>(field, options[field] as NonNullable<typeof options[typeof field]>);
-      });
+    if (name === 'File'){
+      if (('header' in this && 'control' in this)
+        && typeGuards.isFileOverrides(overrides)
+        && typeGuards.isFileOptions(options)
+      ){
+        overrides.forEach((field) => {
+          if (options[field]) this.set<'File'>(field, options[field]);
+        });
 
-      overrides.control.forEach((field) => {
-        if (options[field]) this.set<'Batch', 'control'>(field, options[field]);
-      });
-
-      return this;
+        return this;
+      }
     }
+
+    if (name === 'Batch'){
+      if (('header' in overrides && 'control' in overrides)
+        && ('header' in this && 'control' in this)
+        && typeGuards.isBatchOptions(options)
+      ){
+        overrides.header.forEach((field) => {
+          if (options[field]) this.set<'Batch', 'header'>(field, options[field] as NonNullable<typeof options[typeof field]>);
+        });
+
+        overrides.control.forEach((field) => {
+          if (options[field]) this.set<'Batch', 'control'>(field, options[field]);
+        });
+
+        return this;
+      }
+
+      if (this.debug){
+        console.debug('[overrideOptions::Failed Because]', {
+          name,
+          headerInOverrides: 'header' in overrides,
+          controlInOverrides: 'control' in overrides,
+          headerInThis: 'header' in this,
+          controlInThis: 'control' in this,
+          isBatchOptions: typeGuards.isBatchOptions(options),
+        })
+      }
+    }
+    
 
     if (name === 'Entry'){
       if ('fields' in this
       && Array.isArray(overrides)
-      && isEntryOverrides(overrides)
+      && typeGuards.isEntryOverrides(overrides)
       && typeGuards.isEntryOptions(options)){
         overrides.forEach((field) => {
           if (options[field]) this.set<'Entry'>(field, options[field]);
@@ -218,7 +325,7 @@ export default class achBuilder<
           name,
           fieldsInThis: 'fields' in this,
           overridesIsArray: Array.isArray(overrides),
-          isEntryOverrides: isEntryOverrides(overrides),
+          isEntryOverrides: typeGuards.isEntryOverrides(overrides),
           isEntryOptions: typeGuards.isEntryOptions(options),
         })
       }
@@ -227,7 +334,7 @@ export default class achBuilder<
     if (name === 'EntryAddenda'){
       if ('fields' in this
         && Array.isArray(overrides)
-        && isEntryAddendaOverrides(overrides)
+        && typeGuards.isEntryAddendaOverrides(overrides)
         && typeGuards.isEntryAddendaOptions(options)){
         overrides.forEach((field) => {
           if (field in options && options[field] !== undefined) this.set<'EntryAddenda'>(field, options[field] as NonNullable<typeof options[typeof field]>);
@@ -241,13 +348,11 @@ export default class achBuilder<
           name,
           fieldsInThis: 'fields' in this,
           overridesIsArray: Array.isArray(overrides),
-          isEntryAddendaOverrides: isEntryAddendaOverrides(overrides),
-          isEntryAddendaOptions: isEntryAddendaOptions(options),
+          isEntryAddendaOverrides: typeGuards.isEntryAddendaOverrides(overrides),
+          isEntryAddendaOptions: typeGuards.isEntryAddendaOptions(options),
         })
       }
     }
-
-    
   }
 
   get(field: DataStruct extends 'EntryAddenda'
@@ -256,20 +361,27 @@ export default class achBuilder<
             ? EntryFieldKeys
             : DataStruct extends 'Batch'
               ? (BatchHeaderKeys & BatchControlKeys)
-              : never) {
+              : DataStruct extends 'File'
+                ? (FileHeaderKeys & FileControlKeys)
+                : never) {
     console.log(field);
   }
 
   set<
-    Struct extends 'Batch'|'Entry'|'EntryAddenda',
+    Struct extends 'File'|'Batch'|'Entry'|'EntryAddenda',
     BatchCategoryValue extends Struct extends 'EntryAddenda'
       ? undefined : Struct extends 'Entry'
         ? undefined : Struct extends 'Batch'
-          ? 'header' | 'control' : never = Struct extends 'EntryAddenda'
-          ? undefined : Struct extends 'Entry'
-            ? undefined : Struct extends 'Batch'
-              ? 'header'|'control'
-              : never,
+          ? 'header' | 'control'
+          : Struct extends 'File'
+            ? 'header' | 'control'
+            : never = Struct extends 'EntryAddenda'
+              ? undefined : Struct extends 'Entry'
+                ? undefined : Struct extends 'Batch'
+                  ? 'header' | 'control'
+                  : Struct extends 'File'
+                    ? 'header' | 'control'
+                    : never,
   >(
     field: Struct extends 'EntryAddenda'
       ? EntryAddendaFieldKeys
@@ -281,7 +393,13 @@ export default class achBuilder<
             : BatchCategoryValue extends 'control'
               ? BatchControlKeys
               : never
-          : never,
+          : Struct extends 'File'
+            ? BatchCategoryValue extends 'header'
+              ? FileHeaderKeys
+              : BatchCategoryValue extends 'control'
+                ? FileControlKeys
+                : never
+            : never,
         value: Struct extends 'EntryAddenda'
           ? EntryAddendaFields[EntryAddendaFieldKeys]['value']
           : Struct extends 'Entry'
@@ -292,100 +410,17 @@ export default class achBuilder<
                 : BatchCategoryValue extends 'control'
                   ? BatchControls[BatchControlKeys]['value']
                   : never
-              : never,
+              : Struct extends 'File'
+                ? BatchCategoryValue extends 'header'
+                  ? FileHeaders[FileHeaderKeys]['value']
+                  : BatchCategoryValue extends 'control'
+                    ? FileControls[FileControlKeys]['value']
+                    : never
+                : never,
         ) {
-          const { name } = this;
-
           if (!field) return;
 
-          const isAHeaderField = (field: EntryFieldKeys|EntryAddendaFieldKeys|BatchHeaderKeys|BatchControlKeys): field is BatchHeaderKeys => {
-            return ('header' in this && this.header !== undefined && Object.keys(this.header).includes(field))
-          }
-
-          const isAControlField = (field: EntryFieldKeys|EntryAddendaFieldKeys|BatchHeaderKeys|BatchControlKeys): field is BatchControlKeys => {
-            return ('control' in this && this.control !== undefined && Object.keys(this.control).includes(field))
-          }
-
-          const isAEntryField = (field: EntryFieldKeys|EntryAddendaFieldKeys|BatchHeaderKeys|BatchControlKeys): field is EntryFieldKeys => {
-            return ('fields' in this && this.fields !== undefined && Object.keys(this.fields).includes(field))
-          }
-
-          const isAEntryAddendaField = (field: EntryFieldKeys|EntryAddendaFieldKeys|BatchHeaderKeys|BatchControlKeys): field is EntryAddendaFieldKeys => {
-            return ('fields' in this && this.fields !== undefined && Object.keys(this.fields).includes(field))
-          }
-
-          const controlIsBatchControls = (controls: BatchControls|BatchHeaders): controls is BatchControls => {
-            return (
-              'control' in this
-              && this.control !== undefined
-              && (Object.keys(this.control).includes('recordTypeCode')
-                && Object.keys(this.control).includes(Object.keys(controls)[Object.keys(controls).length - 1]))
-            )
-          }
-
-          const fieldsIsEntryFields = (fields: EntryFields|EntryAddendaFields): fields is EntryFields => {
-            return (
-              'fields' in this
-              && this.fields !== undefined
-              && (Object.keys(this.fields).includes('transactionCode')
-                && Object.keys(this.fields).includes(Object.keys(fields)[Object.keys(fields).length - 1]))
-            )
-          }
-
-          const fieldsIsEntryAddendaFields = (fields: EntryFields|EntryAddendaFields): fields is EntryAddendaFields => {
-            return (
-              'fields' in this
-              && this.fields !== undefined
-              && (Object.keys(this.fields).includes('recordTypeCode')
-                && Object.keys(this.fields).includes(Object.keys(fields)[Object.keys(fields).length - 1]))
-            )
-          }
-
-            if (name === 'Batch'
-              && ('header' in this && 'control' in this)
-              && (this.header !== undefined && this.control !== undefined)
-              && controlIsBatchControls(this.control)
-            ){ // If the header has the field, set the value
-              if (isAHeaderField(field) && field in this.header) {
-                if (field === 'serviceClassCode'){
-                  this.header[field satisfies 'serviceClassCode'].value = value as `${number}`
-                } else {
-                  this.header[field satisfies BatchHeaderKeys].value = value as string|number;
-                }
-              }
-
-              // If the control has the field, set the value
-              if (isAControlField(field) && field in this.control) {
-                this.control[field satisfies BatchControlKeys].value = value;
-              }
-
-              return this;
-            }
-
-            if (name === 'Entry'
-              && ('fields' in this && this.fields !== undefined)
-              && fieldsIsEntryFields(this.fields)
-              && isAEntryField(field)
-            ){
-              // If the entry has the field, set the value
-              this.fields[field satisfies EntryFieldKeys].value = value as string|number;
-
-              return this;
-            }
-
-            if (name === 'EntryAddenda'
-              && ('fields' in this && this.fields !== undefined)
-              && fieldsIsEntryAddendaFields(this.fields)
-              && isAEntryAddendaField(field)
-            ){
-              if (field === 'entryDetailSequenceNumber' && value) {
-                this.fields.entryDetailSequenceNumber.value = value.toString().slice(0 - this.fields.entryDetailSequenceNumber.width) as NumericalString; // pass last n digits
-              } else {
-                this.fields[field satisfies EntryAddendaFieldKeys].value = value as string|number;
-              }
-
-              return this;
-            }
+          console.log(field, value);
           }
       
 }

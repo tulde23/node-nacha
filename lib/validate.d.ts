@@ -8,6 +8,4 @@ export declare function getNextMultipleDiff(value: number, multiple: number): nu
 export declare function validateDataTypes(object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls): boolean;
 export declare function validateACHAddendaTypeCode(addendaTypeCode: NumericalString): boolean;
 export declare function validateACHCode(transactionCode: NumericalString): boolean;
-export declare function validateACHAddendaCode(transactionCode: NumericalString): boolean;
-export declare function validateACHServiceClassCode(serviceClassCode: NumericalString): boolean;
 export declare function validateRoutingNumber(routing: NumericalString | number): boolean;

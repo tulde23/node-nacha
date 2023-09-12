@@ -1,0 +1,282 @@
+import { writeFile } from 'fs/promises';
+import { BatchControls, BatchHeaders, BatchOptions } from '../batch/batchTypes.js';
+import { control as batchControls } from '../batch/control.js';
+import { header as batchHeaders } from '../batch/header.js';
+import { fields as addendaFields } from '../entry-addenda/fields.js';
+import { EntryOptions } from '../entry/entryTypes.js';
+import { fields as entryFields } from '../entry/fields.js';
+import nACHError from '../error.js';
+import { FileControls, FileHeaders, FileOptions } from '../file/FileTypes.js';
+import { fileControls } from '../file/control.js';
+import { fileHeaders } from '../file/header.js';
+import { computeCheckDigit, generateString, getNextMultiple, getNextMultipleDiff, pad } from '../utils.js';
+import Batch from './Batch.js';
+import Entry from './Entry.js';
+import EntryAddenda from './EntryAddenda.js';
+import achBuilder from './achParser.js';
+
+export default class File extends achBuilder<'File'> {
+  header!: FileHeaders;
+  control!: FileControls;
+  private _batches: Array<Batch> = [];
+  private _batchSequenceNumber = 0;
+
+  constructor(options: FileOptions, autoValidate = true, debug = false) {
+    super({ options, name: 'File', debug });
+
+    // This is done to make sure we have a 9-digit routing number
+    if (options.immediateDestination) {
+      this.header.immediateDestination.value = computeCheckDigit(options.immediateDestination);
+    }
+
+    this._batchSequenceNumber = Number(options.batchSequenceNumber) || 0
+
+    if (autoValidate) this.validate();
+  }
+
+  private validate(){
+    const { validations } = this;
+    // Validate header field lengths
+    validations.validateLengths(this.header);
+
+    // Validate header data types
+    validations.validateDataTypes(this.header);
+
+    // Validate control field lengths
+    validations.validateLengths(this.control);
+
+    // Validate header data types
+    validations.validateDataTypes(this.control);
+  }
+
+  addBatch(batch: Batch) {
+    // Set the batch number on the header and control records
+    batch.header.batchNumber.value = this._batchSequenceNumber
+    batch.control.batchNumber.value = this._batchSequenceNumber
+
+    // Increment the batchSequenceNumber
+    this._batchSequenceNumber++
+
+    // Add the batch to the file
+    this._batches.push(batch)
+  }
+
+  getBatches() { return this._batches; }
+
+  generatePaddedRows(rows: number): string {
+    let paddedRows = '';
+  
+    for (let i = 0; i < rows; i++) {
+      paddedRows += '\r\n' + pad('', 94, false, '9');
+    }
+  
+    return paddedRows;
+  }
+
+  generateHeader() { return generateString(this.header); }
+  generateControl() { return generateString(this.control); }
+
+  generateBatches(){
+    let result = '';
+    let rows = 2;
+
+    let entryHash = 0;
+    let addendaCount = 0;
+
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    for (const batch of this._batches) {
+      totalDebit += batch.control.totalDebit.value;
+      totalCredit += batch.control.totalCredit.value;
+  
+      for (const entry of batch._entries) {
+        entry.fields.traceNumber.value = entry.fields.traceNumber.value
+          ?? (this.header.immediateOrigin.value.slice(0, 8) + pad(addendaCount, 7, false, '0'));
+
+        entryHash += Number(entry.fields.receivingDFI.value);
+  
+        // Increment the addenda and block count
+        addendaCount++;
+        rows++;
+      }
+  
+      // Only iterate and generate the batch if there is at least one entry in the batch
+      if (batch._entries.length > 0) {
+        // Increment the addendaCount of the batch
+        this.control.batchCount.value++;
+  
+        // Bump the number of rows only for batches with at least one entry
+        rows = rows + 2;
+  
+        // Generate the batch after we've added the trace numbers
+        const batchString = batch.generateString();
+        result += batchString + '\r\n';
+      }
+    }
+  
+    this.control.totalDebit.value = totalDebit;
+    this.control.totalCredit.value = totalCredit;
+  
+    this.control.addendaCount.value = addendaCount;
+    this.control.blockCount.value = getNextMultiple(rows, 10) / 10;
+  
+    // Slice the 10 rightmost digits.
+    this.control.entryHash.value = Number(entryHash.toString().slice(-10));
+  
+    return { result, rows };
+  }
+
+  generateFile(): Promise<string> {
+    return new Promise((resolve, reject) => {
+      try {
+        // Generate the batches
+        const { result: batchString, rows } = this.generateBatches();
+  
+        // Generate the file header
+        const header = this.generateHeader();
+  
+        // Generate the file control
+        const control = this.generateControl();
+  
+        // Generate the padded rows
+        const paddedRows = this.generatePaddedRows(getNextMultipleDiff(rows, 10));
+  
+        // Resolve the promise with the full file string
+        resolve(header + '\r\n' + batchString + control + paddedRows);
+      } catch (e) {
+        reject(e);
+      }
+    })
+  }
+
+  async writeFile(path: string){
+    try {
+      const fileString = await this.generateFile();
+      await writeFile(path, fileString)
+    } catch (error) {
+      throw new nACHError({
+        name: 'File Write Error',
+        message: `There was an error writing the file to ${path}.`,
+      })
+    }
+  }
+
+  parseLine(str: string, object: Record<string, Record<string, unknown> & { width: number }>): Record<string, string> {
+    let pos = 0;
+  
+    return Object.keys(object).reduce((result: Record<string, string>, key: string) => {
+      const field = object[key];
+      result[key] = str.substring(pos, pos + field.width).trim();
+      pos += field.width;
+      return result;
+    }, {});
+  }
+
+  parse(str: string): Promise<File> {
+    return new Promise((resolve, reject) => {
+      if (!str || !str.length) { reject('Input string is empty'); return; }
+
+      const lines = (str.length <= 1)
+        ? Array.from({ length: Math.ceil(str.length / 94) }, (_, i) => str.substr(i * 94, 94))
+        : str.split('\n');
+
+      const file: Partial<FileOptions> = {};
+      const batches: Array<Partial<BatchOptions> & { entry: Array<Entry> }> = [];
+      let batchIndex = 0;
+      let hasAddenda = false;
+
+      lines.forEach((line) => {
+        if (!line || !line.length) return;
+        const lineType = parseInt(line[0]);
+
+        if (lineType === 1) file.header = this.parseLine(line, fileHeaders) as unknown as FileHeaders;
+        if (lineType === 9) file.control = this.parseLine(line, fileControls) as unknown as FileControls;
+        if (lineType === 5){
+          batches.push({
+            header: this.parseLine(line, batchHeaders) as unknown as BatchHeaders,
+            entry: [],
+          });
+        }
+        if (lineType === 8) {
+          batches[batchIndex].control = this.parseLine(line, batchControls) as unknown as BatchControls;
+          batchIndex++;
+        }
+        if (lineType === 6){
+          batches[batchIndex].entry.push(
+            new Entry(this.parseLine(line, entryFields) as unknown as EntryOptions)
+          );
+        }
+        if (lineType === 7) {
+          batches[batchIndex]
+            .entry[batches[batchIndex].entry.length - 1]
+            .addAddenda(
+              new EntryAddenda(this.parseLine(line, addendaFields))
+            );
+          hasAddenda = true;
+        }
+      });
+
+      if (!file.header || !file.control){ reject('File records parse error'); return; }
+      if (!batches.length) { reject('No batches found'); return; }
+
+      try {
+        const nachFile = new File(file.header as unknown as FileOptions, !hasAddenda);
+
+        batches.forEach((batchOb) => {
+          const batch = new Batch(batchOb.header as unknown as BatchOptions);
+          batchOb.entry.forEach((entry) => {
+            batch.addEntry(entry);
+          });
+          nachFile.addBatch(batch);
+        });
+
+        resolve(nachFile);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  isAHeaderField(field: keyof FileHeaders|keyof FileControls): field is keyof FileHeaders {
+    return Object.keys(this.header).includes(field)
+  }
+
+ isAControlField(field: keyof FileHeaders|keyof FileControls): field is keyof FileControls {
+    return Object.keys(this.control).includes(field)
+  }
+
+  get<Field extends keyof FileHeaders|keyof FileControls = keyof FileHeaders>(field: Field): Field extends keyof FileHeaders 
+    ? typeof this.header[Field]['value']
+    : string|number {
+    // If the header has the field, return the value
+    if (field in this.header && this.isAHeaderField(field)){
+      return this.header[field]['value'] as Field extends keyof FileHeaders ? typeof this.header[Field]['value'] : never;
+    }
+
+    // If the control has the field, return the value
+    if (field in this.control && this.isAControlField(field)) return this.control[field]['value'] as string|number;
+
+    throw new Error(`Field ${field} not found in Batch header or control.`);
+  }
+
+  set<Key extends keyof FileHeaders|keyof FileControls = keyof FileHeaders>(
+    field: Key,
+    value: typeof field extends keyof FileHeaders
+      ? typeof this.header[Key]['value']
+      : typeof field extends keyof FileControls
+        ? typeof this.control[Key]['value']
+        : never
+  ) {
+    // If the header has the field, set the value
+    if (field in this.header && this.isAHeaderField(field)) {
+      return this.header[field satisfies keyof FileHeaders].value = value;
+    }
+
+    // If the control has the field, set the value
+    if (field in this.control && this.isAControlField(field)) {
+      return this.control[field satisfies keyof FileControls]['value'] = value;
+    }
+  }
+}
+module.exports = File;

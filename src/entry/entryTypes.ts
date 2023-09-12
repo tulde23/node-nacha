@@ -24,7 +24,7 @@ type EntryFieldWithStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = En
 type EntryFieldWithNumberValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: number | '' };
 type EntryFieldWithNumericalStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: NumericalString };
 type EntryFieldWithOptionalValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value?: NumericalString };
-type EntryFieldWithBlank<Key extends EntryFieldKeys = EntryFieldKeys> = EntryFieldWithNumberValue<Key> & { blank: boolean; };
+type EntryFieldWithBlank<Key extends EntryFieldKeys = EntryFieldKeys> = EntryFieldWithNumericalStringValue<Key> & { blank: boolean; };
 
 // Entry Fields Object
 export type EntryFields = {

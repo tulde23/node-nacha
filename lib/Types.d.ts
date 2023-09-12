@@ -6,5 +6,5 @@ export type BaseFieldParams = {
     width: number;
     position: number;
     required: boolean;
-    type: 'numeric' | 'alphanumeric' | 'alpha';
+    type: 'numeric' | 'alphanumeric' | 'alpha' | 'ABA';
 };

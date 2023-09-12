@@ -1,9 +1,10 @@
 import { NumericalString } from './Types.js';
-import type { HighLevelHeaderOverrides, HighLevelControlOverrides, BatchOptions, BatchControls, BatchHeaders, BatchHeaderKeys } from './batch/batchTypes.js';
+import type { BatchControls, BatchHeaderKeys, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from './batch/batchTypes.js';
 import { EntryAddendaFieldKeys, EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
-import type { HighLevelFieldOverrides, EntryOptions, EntryFields, EntryFieldKeys } from './entry/entryTypes.js';
+import type { EntryFieldKeys, EntryFields, EntryOptions, HighLevelFieldOverrides } from './entry/entryTypes.js';
 import nACHError from './error';
-import { highLevelAddendaFieldOverrideSet, highLevelControlOverrideSet, highLevelFieldOverrideSet, highLevelHeaderOverrideSet } from './overrides.js';
+import { FileControls, FileHeaders } from './file/FileTypes.js';
+import { highLevelControlOverrideSet, highLevelHeaderOverrideSet } from './overrides.js';
 let counter = 0;
 
 export function addNumericalString(valueStringOne: NumericalString, valueStringTwo: NumericalString): NumericalString {
@@ -56,28 +57,7 @@ export function testRegex(regex: RegExp, field: { number?: boolean; value: unkno
   return true;
 }
 
-// This function iterates through the object passed in and checks to see if it has a "position" property. If so, we pad it, and then concatenate it where belongs.
-// export function generateString(object: Record<string, unknown>, cb: (arg0: string) => void) {
-//   let result = '';
-
-//   Object.keys(object).forEach(key => {
-//     const field = object[key] as { position: number; blank: boolean; type: string; value: string; width: number; number: number; paddingChar: string; };
-
-//     if (field.position) {
-//       if (field.blank === true || field.type == 'alphanumeric') {
-//         result = result + pad(field.value, field.width);
-//       } else {
-//         const string = field.number ? parseFloat(field.value).toFixed(2).replace(/\./, '') : field.value;
-//         const paddingChar = field.paddingChar || '0';
-//         result = result + pad(string, field.width, false, paddingChar);
-//       }
-//     }
-//   });
-
-//   cb(result);
-// }
-
-export function generateString(object: EntryFields|EntryAddendaFields|BatchHeaders|BatchControls): string {
+export function generateString(object: EntryFields|EntryAddendaFields|BatchHeaders|BatchControls|FileHeaders|FileControls): string {
   let counter = 1;
   let result = '';
   const objectCount = Object.keys(object).length;
@@ -104,18 +84,6 @@ export function generateString(object: EntryFields|EntryAddendaFields|BatchHeade
   return result;
 }
 
-export function parseLine(str: string, object: Record<string, { width: number; }>) {
- // Rewrite in Modern JS
- let pos = 0;
-
- return Object.keys(object).reduce((result: Record<string, string>, key: keyof typeof object) => {
-    const field = object[key];
-    result[key] = str.substring(pos, field.width).trim();
-    pos += field.width;
-    return result;
- }, {});
-}
-
 export function compareSets(set1: Set<string>, set2: Set<string>) {
   if (set1.size !== set2.size) return false;
 
@@ -127,7 +95,6 @@ export function compareSets(set1: Set<string>, set2: Set<string>) {
 }
 
 type BatchOverrides = Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>
-type BatchOverrideRecord = { header: Array<HighLevelHeaderOverrides>, control: Array<HighLevelControlOverrides> }
 
 export function isBatchOverrides(arg: BatchOverrides|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is BatchOverrides {
   return compareSets(new Set(arg), highLevelHeaderOverrideSet)
@@ -140,28 +107,6 @@ export function isBatchHeaderOverrides(
   return compareSets(new Set(arg), highLevelHeaderOverrideSet);
 }
 
-export function isBatchOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is BatchOptions {
-  if (typeof arg !== 'object') return false;
-  if (Object.keys(arg).length === 0) return false;
-  if ('header' in arg && 'control' in arg && 'originatingDFI' in arg) return true;
-
-  return false;
-}
-
-export function isEntryOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelFieldOverrides> {
-  if (!Array.isArray(arg)) return false;
-  if (arg.length === 0) return false;
-
-  return compareSets(new Set(arg), highLevelFieldOverrideSet);
-}
-
-export function isEntryAddendaOverrides(arg: BatchOverrides|BatchOverrideRecord|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>): arg is Array<HighLevelAddendaFieldOverrides> {
-  if (!Array.isArray(arg)) return false;
-  if (arg.length === 0) return false;
-  
-  return compareSets(new Set(arg), highLevelAddendaFieldOverrideSet);
-}
-
 export function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryAddendaOptions {
   if (typeof arg !== 'object') return false;
   if (Object.keys(arg).length === 0) return false;
@@ -169,42 +114,6 @@ export function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddend
 
   return false;
 }
-
-// export function overrideLowLevel(values: Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>, options: BatchOptions, self: Batch|achBuilder<'Batch'>): void
-// export function overrideLowLevel(values: Array<HighLevelFieldOverrides>, options: EntryOptions, self: Entry): void
-// export function overrideLowLevel(values: Array<HighLevelAddendaFieldOverrides>, options: EntryAddendaOptions, self: EntryAddenda): void
-// export function overrideLowLevel(
-//   values: Array<HighLevelHeaderOverrides>|Array<HighLevelControlOverrides>|Array<HighLevelFieldOverrides>|Array<HighLevelAddendaFieldOverrides>,
-//   options: BatchOptions|EntryOptions|EntryAddendaOptions,
-//   self: Batch|achBuilder<'Batch'>|Entry|EntryAddenda
-// ): void {
-//   if (!Array.isArray(values)) throw new Error('overrideLowLevel() requires an array of values to override');
-//   if (typeof options !== 'object') throw new Error('overrideLowLevel() requires an object of options to override');
-//   if (typeof self !== 'object') throw new Error('overrideLowLevel() requires an object to override');
-
-//   if (values.length === 0) return;
-//   if (Object.keys(options).length === 0) return;
-//   if (Object.keys(self).length === 0) return;
-
-//   if (isBatchOverrides(values) && isBatchOptions(options) && (self instanceof Batch || self instanceof achBuilder)) {
-//     // For each override value, check to see if it exists on the options object & if so, set it
-//     values.forEach((field) => {
-//       if (options[field]) self.set(field, options[field] as string|number);
-//     });
-//   }
-  
-//   if (isEntryOverrides(values) && isEntryOptions(options) && self instanceof Entry) {
-//     values.forEach((field) => {
-//       if (options[field]) self.set(field, options[field] as string);
-//     });
-//   }
-
-//   if (isEntryAddendaOverrides(values) && isEntryAddendaOptions(options) && self instanceof EntryAddenda) {
-//     values.forEach((field) => {
-//       if (options[field]) self.set(field, options[field] as string);
-//     });
-//   }
-// }
 
 export function unique() { return counter++; }
 
@@ -216,14 +125,29 @@ export function getNextMultipleDiff(value: number, multiple: number) {
   return (getNextMultiple(value, multiple) - value);
 }
 
-// This allows us to create a valid ACH date in the YYMMDD format
-export const formatDate = function(date: Date) {
-  const year = pad(date.getFullYear().toString().slice(-2), 2, false, '0');
-  const month = pad((date.getMonth() + 1).toString(), 2, false, '0');
-  const day = pad(date.getDate().toString(), 2, false, '0');
+export function parseYYMMDD(dateString: string) {
+  const year = dateString.slice(0, 2);
+  const month = dateString.slice(2, 4);
+  const day = dateString.slice(4, 6);
+  const date = new Date(`20${year}-${month}-${day}`);
+  date.setHours(date.getHours() + 12) // Keeps it from converting back as a day behind
 
-  return year + month + day;
-};
+  return date;
+}
+
+// This allows us to create a valid ACH date in the YYMMDD format
+export function formatDateToYYMMDD(date: Date){
+  const year = date.getFullYear().toString().substr(2, 4);
+  const month = ((date.getMonth() + 1) < 10) // months are numbered 0-11 in JavaScript
+    ? `0${(date.getMonth() + 1)}`
+    : (date.getMonth() + 1).toString();
+
+  const day = (date.getDate() < 10)
+    ? `0${date.getDate()}`
+    : date.getDate().toString();
+ 
+  return `${year + month.toString() + day}`
+}
 
 // Create a valid timestamp used by the ACH system in the HHMM format
 export const formatTime = function(date: Date) {
@@ -238,8 +162,7 @@ export const isBusinessDay = function(day: Date) {
   return (d !== 0 && d !== 6) ? true : false;
 };
 
-// This function takes an optional starting date to iterate from based
-// on the number of business days provided.
+// This function takes an optional starting date to iterate from based on the number of business days provided.
 export const computeBusinessDay = function(businessDays: number, startingDate?: Date): Date {
   const date = startingDate || new Date();
   let days = 0;
@@ -252,23 +175,16 @@ export const computeBusinessDay = function(businessDays: number, startingDate?: 
   return date;
 };
 
-export function newLineChar() { return '\r\n'; }
-
 module.exports = {
   addNumericalString,
   isBatchHeaderOverrides,
-  isBatchOptions,
   isEntryAddendaOptions,
-  isEntryAddendaOverrides,
-  isEntryOverrides,
   pad,
   unique,
   testRegex,
-  formatDate,
+  formatDateToYYMMDD,
   formatTime,
-  newLineChar,
   generateString,
-  parseLine,
   getNextMultiple,
   computeCheckDigit,
   computeBusinessDay,

@@ -1,6 +1,7 @@
 import type { HighLevelHeaderOverrides, HighLevelControlOverrides } from './batch/batchTypes.js';
 import type { HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
 import type { HighLevelFieldOverrides } from './entry/entryTypes.js';
+import { HighLevelFileOverrides } from './file/FileTypes.js';
 export declare const highLevelAddendaFieldOverrides: Array<HighLevelAddendaFieldOverrides>;
 export declare const highLevelAddendaFieldOverrideSet: Set<HighLevelAddendaFieldOverrides>;
 export declare const highLevelFieldOverrides: Array<HighLevelFieldOverrides>;
@@ -9,3 +10,5 @@ export declare const highLevelHeaderOverrides: Array<HighLevelHeaderOverrides>;
 export declare const highLevelHeaderOverrideSet: Set<HighLevelHeaderOverrides>;
 export declare const highLevelControlOverrides: Array<HighLevelControlOverrides>;
 export declare const highLevelControlOverrideSet: Set<HighLevelControlOverrides>;
+export declare const highLevelFileOverrides: Array<HighLevelFileOverrides>;
+export declare const highLevelFileOverrideSet: Set<HighLevelFileOverrides>;
