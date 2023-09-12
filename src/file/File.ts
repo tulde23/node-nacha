@@ -6,14 +6,14 @@ import { fields as addendaFields } from '../entry-addenda/fields.js';
 import { EntryOptions } from '../entry/entryTypes.js';
 import { fields as entryFields } from '../entry/fields.js';
 import nACHError from '../error.js';
-import { FileControls, FileHeaders, FileOptions } from '../file/FileTypes.js';
-import { fileControls } from '../file/control.js';
-import { fileHeaders } from '../file/header.js';
+import { FileControls, FileHeaders, FileOptions } from './FileTypes.js';
+import { fileControls } from './control.js';
+import { fileHeaders } from './header.js';
 import { computeCheckDigit, generateString, getNextMultiple, getNextMultipleDiff, pad } from '../utils.js';
-import Batch from './Batch.js';
-import Entry from './Entry.js';
-import EntryAddenda from './EntryAddenda.js';
-import achBuilder from './achParser.js';
+import Batch from '../batch/Batch.js';
+import Entry from '../entry/Entry.js';
+import EntryAddenda from '../entry-addenda/EntryAddenda.js';
+import achBuilder from '../class/achParser.js';
 
 export default class File extends achBuilder<'File'> {
   header!: FileHeaders;

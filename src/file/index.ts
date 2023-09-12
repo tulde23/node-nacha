@@ -2,10 +2,10 @@
 
 import * as utils from '../utils.js';
 import Batch from '../batch/index.js';
-import Entry from '../class/Entry.js';
+import Entry from '../entry/Entry.js';
 import { fileControl } from './control.js';
 import { fileHeader } from './header.js';
-import File from '../class/File.js'
+import File from './File.js'
 
 File.prototype.get = function(field: string | number) {
 

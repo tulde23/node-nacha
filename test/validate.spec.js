@@ -2,7 +2,7 @@ const chai = require('chai');
 const _ = require('lodash');
 const expect = chai.expect;
 const validate = require('../lib/validate');
-const { validateRequiredFields, validateLengths, validateDataTypes, validateACHCode, validateACHServiceClassCode, validateRoutingNumber } = validate;
+const { validateRequiredFields } = validate;
 
 describe('Validate', function() {
   describe('Required Fields', function() {

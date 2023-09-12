@@ -1,6 +1,6 @@
-import { EntryFields, EntryOptions } from '../entry/entryTypes.js';
-import EntryAddenda from './EntryAddenda.js';
-import achBuilder from './achParser.js';
+import achBuilder from '../class/achParser.js';
+import EntryAddenda from '../entry-addenda/EntryAddenda.js';
+import { EntryFields, EntryOptions } from './entryTypes.js';
 export default class Entry extends achBuilder<'Entry'> {
     fields: EntryFields;
     _addendas: Array<EntryAddenda>;

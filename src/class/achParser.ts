@@ -369,55 +369,15 @@ export default class achBuilder<
 
   set<
     Struct extends 'File'|'Batch'|'Entry'|'EntryAddenda',
-    BatchCategoryValue extends Struct extends 'EntryAddenda'
-      ? undefined : Struct extends 'Entry'
-        ? undefined : Struct extends 'Batch'
-          ? 'header' | 'control'
-          : Struct extends 'File'
-            ? 'header' | 'control'
-            : never = Struct extends 'EntryAddenda'
-              ? undefined : Struct extends 'Entry'
-                ? undefined : Struct extends 'Batch'
-                  ? 'header' | 'control'
-                  : Struct extends 'File'
-                    ? 'header' | 'control'
-                    : never,
   >(
-    field: Struct extends 'EntryAddenda'
-      ? EntryAddendaFieldKeys
-      : Struct extends 'Entry'
-        ? EntryFieldKeys
-        : Struct extends 'Batch'
-          ? BatchCategoryValue extends 'header'
-            ? BatchHeaderKeys
-            : BatchCategoryValue extends 'control'
-              ? BatchControlKeys
-              : never
-          : Struct extends 'File'
-            ? BatchCategoryValue extends 'header'
-              ? FileHeaderKeys
-              : BatchCategoryValue extends 'control'
-                ? FileControlKeys
-                : never
-            : never,
-        value: Struct extends 'EntryAddenda'
-          ? EntryAddendaFields[EntryAddendaFieldKeys]['value']
-          : Struct extends 'Entry'
-            ? EntryFields[EntryFieldKeys]['value']
-            : Struct extends 'Batch'
-              ? BatchCategoryValue extends 'header'
-                ? BatchHeaders[BatchHeaderKeys]['value']
-                : BatchCategoryValue extends 'control'
-                  ? BatchControls[BatchControlKeys]['value']
-                  : never
-              : Struct extends 'File'
-                ? BatchCategoryValue extends 'header'
-                  ? FileHeaders[FileHeaderKeys]['value']
-                  : BatchCategoryValue extends 'control'
-                    ? FileControls[FileControlKeys]['value']
-                    : never
-                : never,
-        ) {
+    field: keyof DataMap[Struct]['fields']|keyof DataMap[Struct]['header']|keyof DataMap[Struct]['control'],
+    value: typeof field extends keyof DataMap[Struct]['fields']
+      ? typeof this.fields[typeof field]['value']
+      : typeof field extends keyof DataMap[Struct]['header']
+        ? typeof this.header[typeof field]['value']
+        : typeof field extends keyof DataMap[Struct]['control']
+          ? typeof this.control[typeof field]['value']
+          : never) {
           if (!field) return;
 
           console.log(field, value);

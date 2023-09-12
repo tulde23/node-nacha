@@ -1,8 +1,8 @@
 import { NumericalString } from '../Types.js';
-import { EntryAddendaFields, EntryAddendaOptions } from '../entry-addenda/entryAddendaTypes.js';
+import achBuilder from '../class/achParser.js';
+import nACHError from '../error.js';
 import { generateString } from '../utils.js';
-import { validateACHAddendaTypeCode, validateDataTypes, validateLengths, validateRequiredFields } from '../validate.js';
-import achBuilder from './achParser.js';
+import { EntryAddendaFields, EntryAddendaOptions } from './entryAddendaTypes.js';
 
 export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
   fields!: EntryAddendaFields;
@@ -32,17 +32,26 @@ export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
   }
 
   private validate() {
+    const { validations } = this;
+
     // Validate required fields
-    validateRequiredFields(this.fields);
+    validations.validateRequiredFields(this.fields);
+
+    const ACHAddendaTypeCodes = ['02', '05', '98', '99'] as Array<NumericalString>;
 
     // Validate the ACH code passed is actually valid
-    validateACHAddendaTypeCode(this.fields.addendaTypeCode.value);
+    if (this.fields.addendaTypeCode.value.length !== 2 || ACHAddendaTypeCodes.includes(this.fields.addendaTypeCode.value) === false) {
+      throw new nACHError({
+        name: 'ACH Addenda Type Code Error',
+        message: `The ACH addenda type code ${this.fields.addendaTypeCode.value} is invalid. Please pass a valid 2-digit addenda type code.`,
+      });
+    }
 
     // Validate header field lengths
-    validateLengths(this.fields);
+    validations.validateLengths(this.fields);
 
     // Validate header data types
-    validateDataTypes(this.fields);
+    validations.validateDataTypes(this.fields);
   }
 
   getReturnCode() {

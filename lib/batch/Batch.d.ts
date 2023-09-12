@@ -1,6 +1,6 @@
-import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from '../batch/batchTypes.js';
-import Entry from './Entry.js';
-import achBuilder from './achParser.js';
+import achBuilder from '../class/achParser.js';
+import Entry from '../entry/Entry.js';
+import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
 export default class Batch extends achBuilder<'Batch'> {
     header: BatchHeaders;
     control: BatchControls;

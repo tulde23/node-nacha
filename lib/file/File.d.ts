@@ -1,6 +1,6 @@
-import { FileControls, FileHeaders, FileOptions } from '../file/FileTypes.js';
-import Batch from './Batch.js';
-import achBuilder from './achParser.js';
+import { FileControls, FileHeaders, FileOptions } from './FileTypes.js';
+import Batch from '../batch/Batch.js';
+import achBuilder from '../class/achParser.js';
 export default class File extends achBuilder<'File'> {
     header: FileHeaders;
     control: FileControls;

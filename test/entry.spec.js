@@ -1,7 +1,7 @@
 const chai = require('chai');
 const expect = chai.expect;
-const Entry = require('../lib/class/Entry.js');
-const EntryAddenda = require('../lib/class/EntryAddenda.js');
+const Entry = require('../lib/entry/Entry.js');
+const EntryAddenda = require('../lib/entry-addenda/EntryAddenda.js');
 
 describe('Entry', function() {
   describe('Create Entry', function() {

@@ -1,12 +1,9 @@
 import { NumericalString } from '../Types.js';
-import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from '../batch/batchTypes.js';
+import achBuilder from '../class/achParser.js';
+import Entry from '../entry/Entry.js';
 import nACHError from '../error.js';
 import { computeCheckDigit, formatDateToYYMMDD, generateString, parseYYMMDD } from '../utils.js';
-import { validateRoutingNumber } from '../validate.js';
-import Entry from './Entry.js';
-import achBuilder from './achParser.js';
-
-const ACHServiceClassCodes = ['200', '220', '225'] as Array<NumericalString>;
+import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
 
 export default class Batch extends achBuilder<'Batch'> {
   header!: BatchHeaders;
@@ -60,6 +57,8 @@ export default class Batch extends achBuilder<'Batch'> {
     const { validations } = this;
     // Validate required fields have been passed
     validations.validateRequiredFields(this.header);
+
+    const ACHServiceClassCodes = ['200', '220', '225'] as Array<NumericalString>;
 
     // Validate the batch's ACH service class code
     if (this.header.serviceClassCode.value.length !== 3 || ACHServiceClassCodes.includes(this.header.serviceClassCode.value) === false) {

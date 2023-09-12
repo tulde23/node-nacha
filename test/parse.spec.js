@@ -1,6 +1,6 @@
 const chai = require('chai');
 const expect = chai.expect;
-const File = require('../lib/file');
+const File = require('../lib/file/File.js');
 
 describe('Parse', function() {
   describe('Validate', function() {

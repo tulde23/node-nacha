@@ -1,10 +1,11 @@
 import { NumericalString } from '../Types.js';
-import { EntryFields, EntryOptions } from '../entry/entryTypes.js';
+import achBuilder from '../class/achParser.js';
+import EntryAddenda from '../entry-addenda/EntryAddenda.js';
 import nACHError from '../error.js';
 import { addNumericalString, computeCheckDigit, generateString } from '../utils.js';
-import { validateACHCode, validateDataTypes } from '../validate.js';
-import EntryAddenda from './EntryAddenda.js';
-import achBuilder from './achParser.js';
+import { EntryFields, EntryOptions } from './entryTypes.js';
+
+const ACHTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39'] as Array<NumericalString>;
 
 export default class Entry extends achBuilder<'Entry'>{
   fields!: EntryFields;
@@ -73,7 +74,12 @@ export default class Entry extends achBuilder<'Entry'>{
     // Validate the ACH code passed
     if (this.fields.addendaId.value == '0') {
       if (this.fields.transactionCode.value){
-        validateACHCode(this.fields.transactionCode.value);
+        if (this.fields.transactionCode.value.length !== 2 || ACHTransactionCodes.includes(this.fields.transactionCode.value) === false) {
+          throw new nACHError({
+            name: 'ACH Transaction Code Error',
+            message: `The ACH transaction code ${this.fields.transactionCode.value} is invalid. Please pass a valid 2-digit transaction code.`
+          });
+        }
       } else {
         throw new nACHError({
           name: 'ACH Transaction Code Error',
@@ -96,7 +102,7 @@ export default class Entry extends achBuilder<'Entry'>{
     validations.validateLengths(this.fields);
 
     // Validate header data types
-    validateDataTypes(this.fields);
+    validations.validateDataTypes(this.fields);
   }
 
   generateString(){

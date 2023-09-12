@@ -1,11 +1,1 @@
-import { NumericalString } from './Types.js';
-import { EntryAddendaFields } from './entry-addenda/entryAddendaTypes.js';
-import { EntryFields } from './entry/entryTypes.js';
-import { BatchControls, BatchHeaders } from './batch/batchTypes.js';
-export declare function validateRequiredFields(object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls): boolean;
-export declare function validateLengths(object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls): boolean;
 export declare function getNextMultipleDiff(value: number, multiple: number): number;
-export declare function validateDataTypes(object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls): boolean;
-export declare function validateACHAddendaTypeCode(addendaTypeCode: NumericalString): boolean;
-export declare function validateACHCode(transactionCode: NumericalString): boolean;
-export declare function validateRoutingNumber(routing: NumericalString | number): boolean;

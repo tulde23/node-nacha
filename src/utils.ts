@@ -179,6 +179,7 @@ module.exports = {
   addNumericalString,
   isBatchHeaderOverrides,
   isEntryAddendaOptions,
+  compareSets,
   pad,
   unique,
   testRegex,
