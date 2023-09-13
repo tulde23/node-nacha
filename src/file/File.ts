@@ -1,19 +1,19 @@
-import { writeFile } from 'fs/promises';
+import fs, { writeFile } from 'fs/promises';
+import Batch from '../batch/Batch.js';
 import { BatchControls, BatchHeaders, BatchOptions } from '../batch/batchTypes.js';
 import { control as batchControls } from '../batch/control.js';
 import { header as batchHeaders } from '../batch/header.js';
+import achBuilder from '../class/achParser.js';
+import EntryAddenda from '../entry-addenda/EntryAddenda.js';
 import { fields as addendaFields } from '../entry-addenda/fields.js';
+import Entry from '../entry/Entry.js';
 import { EntryOptions } from '../entry/entryTypes.js';
 import { fields as entryFields } from '../entry/fields.js';
-import nACHError from '../error.js';
+import { computeCheckDigit, generateString, getNextMultiple, getNextMultipleDiff, pad } from '../utils.js';
 import { FileControls, FileHeaders, FileOptions } from './FileTypes.js';
 import { fileControls } from './control.js';
 import { fileHeaders } from './header.js';
-import { computeCheckDigit, generateString, getNextMultiple, getNextMultipleDiff, pad } from '../utils.js';
-import Batch from '../batch/Batch.js';
-import Entry from '../entry/Entry.js';
-import EntryAddenda from '../entry-addenda/EntryAddenda.js';
-import achBuilder from '../class/achParser.js';
+import validations from '../validate.js';
 
 export default class File extends achBuilder<'File'> {
   header!: FileHeaders;
@@ -23,6 +23,18 @@ export default class File extends achBuilder<'File'> {
 
   constructor(options: FileOptions, autoValidate = true, debug = false) {
     super({ options, name: 'File', debug });
+
+    if (('header' in this && 'control' in this)
+        && this.typeGuards.isFileOverrides(this.overrides)
+        && this.typeGuards.isFileOptions(this.options)
+      ){
+        this.overrides.forEach((field) => {
+          if (field in this.options && this.options[field] !== undefined){
+            const value = this.options[field];
+            if (value !== undefined) this.set(field, value);
+          }
+        });
+      }
 
     // This is done to make sure we have a 9-digit routing number
     if (options.immediateDestination) {
@@ -35,18 +47,19 @@ export default class File extends achBuilder<'File'> {
   }
 
   private validate(){
-    const { validations } = this;
+    const { validateDataTypes, validateLengths } = validations(this);
+
     // Validate header field lengths
-    validations.validateLengths(this.header);
+    validateLengths(this.header);
 
     // Validate header data types
-    validations.validateDataTypes(this.header);
+    validateDataTypes(this.header);
 
     // Validate control field lengths
-    validations.validateLengths(this.control);
+    validateLengths(this.control);
 
     // Validate header data types
-    validations.validateDataTypes(this.control);
+    validateDataTypes(this.control);
   }
 
   addBatch(batch: Batch) {
@@ -153,16 +166,24 @@ export default class File extends achBuilder<'File'> {
   async writeFile(path: string){
     try {
       const fileString = await this.generateFile();
-      await writeFile(path, fileString)
+      return await writeFile(path, fileString)
     } catch (error) {
-      throw new nACHError({
-        name: 'File Write Error',
-        message: `There was an error writing the file to ${path}.`,
-      })
+      console.error('[node-natcha::File:writeFile] - Error', error);
+      throw error;
     }
   }
 
-  parseLine(str: string, object: Record<string, Record<string, unknown> & { width: number }>): Record<string, string> {
+  static async parseFile(filePath: string) {
+    try {
+      const data = await fs.readFile(filePath, { encoding: 'utf-8' });
+      return await this.parse(data);
+    } catch (err) {
+      console.error('[node-natcha::File:parseFile] - Error', err);
+      throw err;
+    }
+  }
+
+  static parseLine(str: string, object: Record<string, Record<string, unknown> & { width: number }>): Record<string, string> {
     let pos = 0;
   
     return Object.keys(object).reduce((result: Record<string, string>, key: string) => {
@@ -173,7 +194,7 @@ export default class File extends achBuilder<'File'> {
     }, {});
   }
 
-  parse(str: string): Promise<File> {
+  static parse(str: string): Promise<File> {
     return new Promise((resolve, reject) => {
       if (!str || !str.length) { reject('Input string is empty'); return; }
 
@@ -246,31 +267,25 @@ export default class File extends achBuilder<'File'> {
     return Object.keys(this.control).includes(field)
   }
 
-  get<Field extends keyof FileHeaders|keyof FileControls = keyof FileHeaders>(field: Field): Field extends keyof FileHeaders 
-    ? typeof this.header[Field]['value']
-    : string|number {
+  get<Field extends keyof FileHeaders|keyof FileControls = keyof FileHeaders>(field: Field) {
     // If the header has the field, return the value
     if (field in this.header && this.isAHeaderField(field)){
       return this.header[field]['value'] as Field extends keyof FileHeaders ? typeof this.header[Field]['value'] : never;
     }
 
     // If the control has the field, return the value
-    if (field in this.control && this.isAControlField(field)) return this.control[field]['value'] as string|number;
+    if (field in this.control && this.isAControlField(field)) return this.control[field]['value'] as Field extends keyof FileControls ? typeof this.control[Field]['value'] : never;
 
     throw new Error(`Field ${field} not found in Batch header or control.`);
   }
 
   set<Key extends keyof FileHeaders|keyof FileControls = keyof FileHeaders>(
     field: Key,
-    value: typeof field extends keyof FileHeaders
-      ? typeof this.header[Key]['value']
-      : typeof field extends keyof FileControls
-        ? typeof this.control[Key]['value']
-        : never
+    value: string|number
   ) {
     // If the header has the field, set the value
     if (field in this.header && this.isAHeaderField(field)) {
-      return this.header[field satisfies keyof FileHeaders].value = value;
+      return this.header[field satisfies keyof FileHeaders].value = value as string;
     }
 
     // If the control has the field, set the value

@@ -1,4 +1,3 @@
-import { NumericalString } from '../Types.js';
 import { BatchControlKeys, BatchControls, BatchHeaderKeys, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from '../batch/batchTypes.js';
 import { EntryAddendaFieldKeys, EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from '../entry-addenda/entryAddendaTypes.js';
 import { EntryFieldKeys, EntryFields, EntryOptions, HighLevelFieldOverrides } from '../entry/entryTypes.js';
@@ -62,19 +61,11 @@ export default class achBuilder<DataStruct extends 'Entry' | 'EntryAddenda' | 'B
         isEntryAddendaOverrides(arg: BatchOverrides | BatchOverrideRecord | Array<HighLevelFieldOverrides> | Array<HighLevelAddendaFieldOverrides> | Array<HighLevelFileOverrides>): arg is HighLevelAddendaFieldOverrides[];
         isFileOverrides(arg: BatchOverrides | BatchOverrideRecord | Array<HighLevelFieldOverrides> | Array<HighLevelAddendaFieldOverrides> | Array<HighLevelFileOverrides>): arg is HighLevelFileOverrides[];
     };
-    validations: {
-        validateRequiredFields: (object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls | FileHeaders | FileControls) => boolean;
-        validateRoutingNumber(routing: NumericalString | number): boolean;
-        validateLengths: (object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls | FileHeaders | FileControls) => boolean;
-        validateDataTypes(object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls | FileHeaders | FileControls): boolean;
-    };
     constructor({ options, name, debug }: {
         options: Options;
         name: DataStruct;
         debug?: boolean;
     });
-    overrideOptions(): this | undefined;
     get(field: DataStruct extends 'EntryAddenda' ? EntryAddendaFieldKeys : DataStruct extends 'Entry' ? EntryFieldKeys : DataStruct extends 'Batch' ? (BatchHeaderKeys & BatchControlKeys) : DataStruct extends 'File' ? (FileHeaderKeys & FileControlKeys) : never): void;
-    set<Struct extends 'File' | 'Batch' | 'Entry' | 'EntryAddenda'>(field: keyof DataMap[Struct]['fields'] | keyof DataMap[Struct]['header'] | keyof DataMap[Struct]['control'], value: typeof field extends keyof DataMap[Struct]['fields'] ? typeof this.fields[typeof field]['value'] : typeof field extends keyof DataMap[Struct]['header'] ? typeof this.header[typeof field]['value'] : typeof field extends keyof DataMap[Struct]['control'] ? typeof this.control[typeof field]['value'] : never): void;
 }
 export {};

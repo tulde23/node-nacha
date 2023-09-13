@@ -98,7 +98,7 @@ export const fields: EntryFields = {
     required: false,
     type: 'numeric',
     blank: true,
-    value: ''
+    value: '' as `${number}`
   }
 };
 

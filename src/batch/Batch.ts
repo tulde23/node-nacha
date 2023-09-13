@@ -1,8 +1,8 @@
 import { NumericalString } from '../Types.js';
 import achBuilder from '../class/achParser.js';
 import Entry from '../entry/Entry.js';
-import nACHError from '../error.js';
 import { computeCheckDigit, formatDateToYYMMDD, generateString, parseYYMMDD } from '../utils.js';
+import validations from '../validate.js';
 import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
 
 export default class Batch extends achBuilder<'Batch'> {
@@ -13,9 +13,34 @@ export default class Batch extends achBuilder<'Batch'> {
   constructor(options: BatchOptions, autoValidate = true, debug = false) {
     super({ options, name: 'Batch', debug });
 
+    const { typeGuards, overrides } = this;
+
+    if (('header' in overrides && 'control' in overrides)
+        && ('header' in this && 'control' in this)
+        && typeGuards.isBatchOptions(this.options)
+      ){
+        overrides.header.forEach((field) => {
+          if (this.options[field]) this.set(field, this.options[field] as NonNullable<typeof this.options[typeof field]>);
+        });
+
+        overrides.control.forEach((field) => {
+          if (this.options[field]) this.set(field, this.options[field] as NonNullable<typeof this.options[typeof field]>);
+        });
+      } else {
+        if (this.debug){
+          console.debug('[overrideOptions::Failed Because]', {
+            headerInOverrides: 'header' in overrides,
+            controlInOverrides: 'control' in overrides,
+            headerInThis: 'header' in this,
+            controlInThis: 'control' in this,
+            isBatchOptions: typeGuards.isBatchOptions(this.options),
+          })
+        }
+      }
+
     if (autoValidate) {
       // Validate the routing number (ABA) before slicing
-      validateRoutingNumber(computeCheckDigit(options.originatingDFI));
+      validations(this).validateRoutingNumber(computeCheckDigit(options.originatingDFI));
     }
 
     if (options.companyName) {
@@ -54,34 +79,27 @@ export default class Batch extends achBuilder<'Batch'> {
   }
 
   _validate() {
-    const { validations } = this;
+    const { validateDataTypes, validateLengths, validateRequiredFields, validateACHServiceClassCode } = validations(this);
     // Validate required fields have been passed
-    validations.validateRequiredFields(this.header);
-
-    const ACHServiceClassCodes = ['200', '220', '225'] as Array<NumericalString>;
+    validateRequiredFields(this.header);
 
     // Validate the batch's ACH service class code
-    if (this.header.serviceClassCode.value.length !== 3 || ACHServiceClassCodes.includes(this.header.serviceClassCode.value) === false) {
-      throw new nACHError({
-        name: 'ACH Service Class Code Error',
-        message: `The ACH service class code ${this.header.serviceClassCode.value} is invalid. Please pass a valid 3-digit service class code.`,
-      });
-    }
+    validateACHServiceClassCode(this.header.serviceClassCode.value);
 
     // Validate field lengths
-    validations.validateLengths(this.header);
+    validateLengths(this.header);
 
     // Validate datatypes
-    validations.validateDataTypes(this.header);
+    validateDataTypes(this.header);
 
     // Validate required fields have been passed
-    validations.validateRequiredFields(this.control);
+    validateRequiredFields(this.control);
 
     // Validate field lengths
-    validations.validateLengths(this.control);
+    validateLengths(this.control);
 
     // Validate datatypes
-    validations.validateDataTypes(this.control);
+    validateDataTypes(this.control);
   }
 
   addEntry(entry: Entry) {

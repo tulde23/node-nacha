@@ -3,6 +3,7 @@ import achBuilder from '../class/achParser.js';
 import EntryAddenda from '../entry-addenda/EntryAddenda.js';
 import nACHError from '../error.js';
 import { addNumericalString, computeCheckDigit, generateString } from '../utils.js';
+import validations from '../validate.js';
 import { EntryFields, EntryOptions } from './entryTypes.js';
 
 const ACHTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39'] as Array<NumericalString>;
@@ -13,6 +14,43 @@ export default class Entry extends achBuilder<'Entry'>{
 
   constructor(options: EntryOptions, autoValidate = true, debug = false) {
     super({ options: options, name: 'Entry', debug });
+
+    const { typeGuards, overrides } = this;
+
+    if ('fields' in this
+      && Array.isArray(overrides)
+      && typeGuards.isEntryOverrides(overrides)
+      && typeGuards.isEntryOptions(this.options)){
+        overrides.forEach((field) => {
+          if (field in this.options){
+            const value = this.options[field];
+            if (value) {
+              if (field === 'transactionCode'
+              || field === 'receivingDFI'
+              || field === 'traceNumber'
+              || field === 'checkDigit'
+              || field === 'DFIAccount'
+              || field === 'idNumber'
+              || field === 'discretionaryData') {
+                this.set(field, value as `${number}`);
+              } else if (field === 'amount') {
+                this.set(field, Number(value));
+              } else {
+                this.set(field, value);
+              }
+            }
+          }
+        });
+      } else {
+        if (this.debug){
+          console.debug('[overrideOptions::Failed Because]', {
+            fieldsInThis: 'fields' in this,
+            overridesIsArray: Array.isArray(overrides),
+            isEntryOverrides: typeGuards.isEntryOverrides(overrides),
+            isEntryOptions: typeGuards.isEntryOptions(options),
+          })
+        }
+      }
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.receivingDFI) {
@@ -66,10 +104,10 @@ export default class Entry extends achBuilder<'Entry'>{
   getRecordCount() { return this._addendas.length + 1; }
 
   _validate() {
-    const { validations } = this;
+    const { validateDataTypes, validateLengths, validateRequiredFields, validateRoutingNumber } = validations(this);
 
     // Validate required fields
-    validations.validateRequiredFields(this.fields);
+    validateRequiredFields(this.fields);
   
     // Validate the ACH code passed
     if (this.fields.addendaId.value == '0') {
@@ -94,15 +132,15 @@ export default class Entry extends achBuilder<'Entry'>{
     }
   
     // Validate the routing number
-    validations.validateRoutingNumber(
+    validateRoutingNumber(
       addNumericalString(this.fields.receivingDFI.value, this.fields.checkDigit.value)
     );
   
     // Validate header field lengths
-    validations.validateLengths(this.fields);
+    validateLengths(this.fields);
 
     // Validate header data types
-    validations.validateDataTypes(this.fields);
+    validateDataTypes(this.fields);
   }
 
   generateString(){
@@ -118,7 +156,7 @@ export default class Entry extends achBuilder<'Entry'>{
     return this.fields[field]['value'];
   }
 
-  set<Key extends keyof EntryFields = keyof EntryFields>(field: Key, value: this['fields'][Key]['value']) {
+  set<Key extends keyof EntryFields = keyof EntryFields>(field: Key, value: typeof this['fields'][Key]['value']) {
     if (this.fields[field]) this.fields[field]['value'] = value;
   }
 }

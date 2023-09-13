@@ -1,7 +1,7 @@
 import { NumericalString } from '../Types.js';
 import achBuilder from '../class/achParser.js';
-import nACHError from '../error.js';
 import { generateString } from '../utils.js';
+import validations from '../validate.js';
 import { EntryAddendaFields, EntryAddendaOptions } from './entryAddendaTypes.js';
 
 export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
@@ -9,6 +9,28 @@ export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
 
   constructor(options: EntryAddendaOptions, autoValidate: boolean = true, debug = false) {
     super({ options, name: 'EntryAddenda', debug });
+
+    const { overrides, typeGuards } = this;
+
+    if ('fields' in this
+    && Array.isArray(overrides)
+    && typeGuards.isEntryAddendaOverrides(overrides)
+    && typeGuards.isEntryAddendaOptions(options)){
+    overrides.forEach((field) => {
+      if (field in options && options[field] !== undefined) this.set(field, options[field] as NonNullable<typeof options[typeof field]>);
+    });
+  } else{
+    if (this.debug){
+      console.debug('[overrideOptions::Failed Because]', {
+        fieldsInThis: 'fields' in this,
+        overridesIsArray: Array.isArray(overrides),
+        isEntryAddendaOverrides: typeGuards.isEntryAddendaOverrides(overrides),
+        isEntryAddendaOptions: typeGuards.isEntryAddendaOptions(options),
+      })
+    }
+  }
+
+  
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.returnCode) {
@@ -32,26 +54,19 @@ export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
   }
 
   private validate() {
-    const { validations } = this;
+    const { validateRequiredFields, validateLengths, validateDataTypes, validateACHAddendaTypeCode } = validations(this);
 
     // Validate required fields
-    validations.validateRequiredFields(this.fields);
-
-    const ACHAddendaTypeCodes = ['02', '05', '98', '99'] as Array<NumericalString>;
+    validateRequiredFields(this.fields);
 
     // Validate the ACH code passed is actually valid
-    if (this.fields.addendaTypeCode.value.length !== 2 || ACHAddendaTypeCodes.includes(this.fields.addendaTypeCode.value) === false) {
-      throw new nACHError({
-        name: 'ACH Addenda Type Code Error',
-        message: `The ACH addenda type code ${this.fields.addendaTypeCode.value} is invalid. Please pass a valid 2-digit addenda type code.`,
-      });
-    }
+    validateACHAddendaTypeCode(this.fields.addendaTypeCode.value);
 
     // Validate header field lengths
-    validations.validateLengths(this.fields);
+    validateLengths(this.fields);
 
     // Validate header data types
-    validations.validateDataTypes(this.fields);
+    validateDataTypes(this.fields);
   }
 
   getReturnCode() {

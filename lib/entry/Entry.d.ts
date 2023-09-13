@@ -11,5 +11,5 @@ export default class Entry extends achBuilder<'Entry'> {
     _validate(): void;
     generateString(): string;
     get<Key extends keyof EntryFields = keyof EntryFields>(field: Key): this['fields'][Key]['value'];
-    set<Key extends keyof EntryFields = keyof EntryFields>(field: Key, value: this['fields'][Key]['value']): void;
+    set<Key extends keyof EntryFields = keyof EntryFields>(field: Key, value: typeof this['fields'][Key]['value']): void;
 }

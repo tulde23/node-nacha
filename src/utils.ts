@@ -183,6 +183,7 @@ module.exports = {
   pad,
   unique,
   testRegex,
+  parseYYMMDD,
   formatDateToYYMMDD,
   formatTime,
   generateString,
