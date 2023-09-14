@@ -14,6 +14,7 @@ import { FileControls, FileHeaders, FileOptions } from './FileTypes.js';
 import { fileControls } from './control.js';
 import { fileHeaders } from './header.js';
 import validations from '../validate.js';
+import nACHError from '../error.js';
 
 export default class File extends achBuilder<'File'> {
   header!: FileHeaders;
@@ -173,28 +174,32 @@ export default class File extends achBuilder<'File'> {
     }
   }
 
-  static async parseFile(filePath: string) {
+  static async parseFile(filePath: string, debug = false) {
     try {
       const data = await fs.readFile(filePath, { encoding: 'utf-8' });
-      return await this.parse(data);
+      const file = await this.parse(data, debug);
+      return file;
     } catch (err) {
       console.error('[node-natcha::File:parseFile] - Error', err);
-      throw err;
+      throw new nACHError({
+        name: 'File Parse Error',
+        message: err.message,
+      });
     }
   }
 
-  static parseLine(str: string, object: Record<string, Record<string, unknown> & { width: number }>): Record<string, string> {
-    let pos = 0;
-  
-    return Object.keys(object).reduce((result: Record<string, string>, key: string) => {
-      const field = object[key];
-      result[key] = str.substring(pos, pos + field.width).trim();
-      pos += field.width;
-      return result;
-    }, {});
-  }
+  static parse(str: string, debug: boolean): Promise<File> {
+    const parseLine = (str: string, object: Record<string, Record<string, unknown> & { width: number }>): Record<string, string> => {
+      let pos = 0;
+    
+      return Object.keys(object).reduce((result: Record<string, string>, key: string) => {
+        const field = object[key];
+        result[key] = str.substring(pos, pos + field.width).trim();
+        pos += field.width;
+        return result;
+      }, {});
+    }
 
-  static parse(str: string): Promise<File> {
     return new Promise((resolve, reject) => {
       if (!str || !str.length) { reject('Input string is empty'); return; }
 
@@ -208,44 +213,51 @@ export default class File extends achBuilder<'File'> {
       let hasAddenda = false;
 
       lines.forEach((line) => {
-        if (!line || !line.length) return;
-        const lineType = parseInt(line[0]);
+        try {
+          if (!line || !line.length) return;
+          const lineType = parseInt(line[0]);
 
-        if (lineType === 1) file.header = this.parseLine(line, fileHeaders) as unknown as FileHeaders;
-        if (lineType === 9) file.control = this.parseLine(line, fileControls) as unknown as FileControls;
-        if (lineType === 5){
-          batches.push({
-            header: this.parseLine(line, batchHeaders) as unknown as BatchHeaders,
-            entry: [],
-          });
-        }
-        if (lineType === 8) {
-          batches[batchIndex].control = this.parseLine(line, batchControls) as unknown as BatchControls;
-          batchIndex++;
-        }
-        if (lineType === 6){
-          batches[batchIndex].entry.push(
-            new Entry(this.parseLine(line, entryFields) as unknown as EntryOptions)
-          );
-        }
-        if (lineType === 7) {
-          batches[batchIndex]
-            .entry[batches[batchIndex].entry.length - 1]
-            .addAddenda(
-              new EntryAddenda(this.parseLine(line, addendaFields))
+          if (lineType === 1) file.header = parseLine(line, fileHeaders) as unknown as FileHeaders;
+          if (lineType === 9) file.control = parseLine(line, fileControls) as unknown as FileControls;
+          if (lineType === 5){
+            batches.push({
+              header: parseLine(line, batchHeaders) as unknown as BatchHeaders,
+              entry: [],
+            });
+          }
+          if (lineType === 8) {
+            batches[batchIndex].control = parseLine(line, batchControls) as unknown as BatchControls;
+            batchIndex++;
+          }
+          if (lineType === 6){
+            batches[batchIndex].entry.push(
+              new Entry(parseLine(line, entryFields) as unknown as EntryOptions, undefined, debug)
             );
-          hasAddenda = true;
+          }
+          if (lineType === 7) {
+            batches[batchIndex]
+              .entry[batches[batchIndex].entry.length - 1]
+              .addAddenda(
+                new EntryAddenda(parseLine(line, addendaFields), undefined, debug)
+              );
+            hasAddenda = true;
+          }
+        } catch (error) {
+          console.log('[node-natcha::File:parse] - Error', error)
+          reject(error);
         }
+        
       });
 
-      if (!file.header || !file.control){ reject('File records parse error'); return; }
+      if (!file.header) { reject('File header missing or not parsable error'); return; } 
+      if (!file.control){ reject('File control missing or not parsable error'); return; }
       if (!batches.length) { reject('No batches found'); return; }
 
       try {
-        const nachFile = new File(file.header as unknown as FileOptions, !hasAddenda);
+        const nachFile = new File(file.header as unknown as FileOptions, !hasAddenda, debug);
 
         batches.forEach((batchOb) => {
-          const batch = new Batch(batchOb.header as unknown as BatchOptions);
+          const batch = new Batch(batchOb.header as unknown as BatchOptions, undefined, debug);
           batchOb.entry.forEach((entry) => {
             batch.addEntry(entry);
           });

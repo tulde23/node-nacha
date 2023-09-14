@@ -48,4 +48,7 @@ export type EntryOptions = {
   idNumber: string;
   individualName: string;
   discretionaryData: string;
-} & Record<Exclude<HighLevelFieldOverrides, 'receivingDFI'|'DFIAccount'|'amount'|'idNumber'|'individualName'|'discretionaryData'>, string|undefined>;
+  transactionCode?: NumericalString;
+} & {
+  [key in Exclude<HighLevelFieldOverrides, 'receivingDFI'|'DFIAccount'|'amount'|'idNumber'|'individualName'|'discretionaryData'|'transactionCode'>]?: string;
+}

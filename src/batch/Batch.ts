@@ -1,6 +1,7 @@
 import { NumericalString } from '../Types.js';
 import achBuilder from '../class/achParser.js';
 import Entry from '../entry/Entry.js';
+import nACHError from '../error.js';
 import { computeCheckDigit, formatDateToYYMMDD, generateString, parseYYMMDD } from '../utils.js';
 import validations from '../validate.js';
 import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
@@ -127,7 +128,10 @@ export default class Batch extends achBuilder<'Batch'> {
         } else if (debitCodes.includes(entry.fields.transactionCode.value as NumericalString)) {
           totalDebit += entry.fields.amount.value;
         } else {
-          console.log('Transaction codes did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)');
+          throw new nACHError({
+            name: 'Transaction Code Error',
+            message: `Transaction code ${entry.fields.transactionCode.value} did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)`
+          })
         }
       }
     });

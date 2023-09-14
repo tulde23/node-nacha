@@ -16,6 +16,8 @@ const alphaRegex = /^[a-zA-Z]+$/;
 const alphanumericRegex = /(^[0-9a-zA-Z!"#$%&'()*+,-.\/:;<>=?@\[\]\\^_`{}|~ ]+$)|(^$)/;
 
 export default function validations(classDefinition: File|Batch|Entry|EntryAddenda){
+  const debug = classDefinition.debug;
+
   return {
     validateRequiredFields: (object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls|FileHeaders|FileControls) => {
       Object.keys(object).forEach((k) => {
@@ -24,9 +26,9 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
         // Zero is valid, but the data type check will make sure any fields with 0 are numeric.
         if (
             ('required' in field && typeof field.required === 'boolean' && field.required === true)
-            && (('value' in field === false) || (!field.value) || field.value.toString().length === 0)
+            && (('value' in field === false) || (field.value === undefined) || field.value.toString().length === 0)
           ) {
-          if (classDefinition.debug){
+          if (debug){
             console.debug('[validateRequiredFields::Failed Because]', {
               name: field.name,
               value: field.value,
@@ -92,7 +94,7 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
       Object.keys(object).forEach((k) => {
         const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
     
-        if ('blank' in field && field.blank !== true) {
+        if (('blank' in field) === false || ('blank' in field && field.blank !== true)) {
           switch (field.type) {
             case 'numeric': { testRegex(numericRegex, field); break; }
             case 'alpha': { testRegex(alphaRegex, field); break; }
@@ -106,6 +108,25 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
           }
         }
       });
+    
+      return true;
+    },
+    validateACHCode: (transactionCode: NumericalString) => {
+      const ACHTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39'] as Array<NumericalString>;
+
+      if (transactionCode.length !== 2 || ACHTransactionCodes.includes(transactionCode) === false) {
+        if (debug){
+          console.debug('[validateACHCode::Failed Because]', {
+            transactionCode,
+            ACHTransactionCodes,
+            includes: ACHTransactionCodes.includes(transactionCode),
+          })
+        }
+        throw new nACHError({
+          name: 'ACH Transaction Code Error',
+          message: 'The ACH transaction code ' + transactionCode + ' is invalid. Please pass a valid 2-digit transaction code.'
+        });
+      }
     
       return true;
     },

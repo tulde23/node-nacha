@@ -12,6 +12,7 @@ export default function validations(classDefinition: File | Batch | Entry | Entr
     validateRoutingNumber: (routing: NumericalString | number) => boolean;
     validateLengths: (object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls | FileHeaders | FileControls) => boolean;
     validateDataTypes: (object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls | FileHeaders | FileControls) => boolean;
+    validateACHCode: (transactionCode: NumericalString) => boolean;
     validateACHAddendaTypeCode: (addendaTypeCode: NumericalString) => boolean;
     validateACHServiceClassCode: (serviceClassCode: NumericalString) => boolean;
     getNextMultipleDiff: (value: number, multiple: number) => number;

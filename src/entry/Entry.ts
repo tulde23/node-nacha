@@ -1,12 +1,9 @@
 import { NumericalString } from '../Types.js';
 import achBuilder from '../class/achParser.js';
 import EntryAddenda from '../entry-addenda/EntryAddenda.js';
-import nACHError from '../error.js';
 import { addNumericalString, computeCheckDigit, generateString } from '../utils.js';
 import validations from '../validate.js';
 import { EntryFields, EntryOptions } from './entryTypes.js';
-
-const ACHTransactionCodes = ['22', '23', '24', '27', '28', '29', '32', '33', '34', '37', '38', '39'] as Array<NumericalString>;
 
 export default class Entry extends achBuilder<'Entry'>{
   fields!: EntryFields;
@@ -104,43 +101,36 @@ export default class Entry extends achBuilder<'Entry'>{
   getRecordCount() { return this._addendas.length + 1; }
 
   _validate() {
-    const { validateDataTypes, validateLengths, validateRequiredFields, validateRoutingNumber } = validations(this);
+    try {
+      const { validateDataTypes, validateLengths, validateRequiredFields, validateRoutingNumber, validateACHCode } = validations(this);
 
-    // Validate required fields
-    validateRequiredFields(this.fields);
-  
-    // Validate the ACH code passed
-    if (this.fields.addendaId.value == '0') {
-      if (this.fields.transactionCode.value){
-        if (this.fields.transactionCode.value.length !== 2 || ACHTransactionCodes.includes(this.fields.transactionCode.value) === false) {
-          throw new nACHError({
-            name: 'ACH Transaction Code Error',
-            message: `The ACH transaction code ${this.fields.transactionCode.value} is invalid. Please pass a valid 2-digit transaction code.`
-          });
-        }
+      // Validate required fields
+      validateRequiredFields(this.fields);
+    
+      // Validate the ACH code passed
+      if (this.fields.addendaId.value == '0') {
+        validateACHCode(this.fields.transactionCode.value as `${number}`);
       } else {
-        throw new nACHError({
-          name: 'ACH Transaction Code Error',
-          message: `The ACH transaction code must be provided when addenda ID === '0'. Please pass a valid 2-digit transaction code.`
-        });
+        if (this.fields.transactionCode.value){
+          //  validateACHAddendaCode(this.fields.transactionCode.value);
+          //! - this didn't do anything in the base library
+        }
       }
-    } else {
-      if (this.fields.transactionCode.value){
-        //  validateACHAddendaCode(this.fields.transactionCode.value);
-        //! - this didn't do anything in the base library
-      }
+    
+      // Validate the routing number
+      validateRoutingNumber(
+        addNumericalString(this.fields.receivingDFI.value, this.fields.checkDigit.value)
+      );
+    
+      // Validate header field lengths
+      validateLengths(this.fields);
+  
+      // Validate header data types
+      validateDataTypes(this.fields);
+    } catch (error) {
+      if (this.debug) console.debug('[Entry::_validate::Error]', error)
+      throw error;
     }
-  
-    // Validate the routing number
-    validateRoutingNumber(
-      addNumericalString(this.fields.receivingDFI.value, this.fields.checkDigit.value)
-    );
-  
-    // Validate header field lengths
-    validateLengths(this.fields);
-
-    // Validate header data types
-    validateDataTypes(this.fields);
   }
 
   generateString(){

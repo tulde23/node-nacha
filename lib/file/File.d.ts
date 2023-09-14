@@ -19,13 +19,10 @@ export default class File extends achBuilder<'File'> {
     };
     generateFile(): Promise<string>;
     writeFile(path: string): Promise<void>;
-    static parseFile(filePath: string): Promise<File>;
-    static parseLine(str: string, object: Record<string, Record<string, unknown> & {
-        width: number;
-    }>): Record<string, string>;
-    static parse(str: string): Promise<File>;
+    static parseFile(filePath: string, debug?: boolean): Promise<File>;
+    static parse(str: string, debug: boolean): Promise<File>;
     isAHeaderField(field: keyof FileHeaders | keyof FileControls): field is keyof FileHeaders;
     isAControlField(field: keyof FileHeaders | keyof FileControls): field is keyof FileControls;
-    get<Field extends keyof FileHeaders | keyof FileControls = keyof FileHeaders>(field: Field): (Field extends ("immediateDestination" | "immediateOrigin" | "fileCreationDate" | "fileCreationTime" | "fileIdModifier" | "immediateDestinationName" | "immediateOriginName" | "referenceCode") | ("recordTypeCode" | "priorityCode" | "recordSize" | "blockingFactor" | "formatCode") ? FileHeaders[Field]["value"] : never) | (Field extends "recordTypeCode" | "reserved" | ("addendaCount" | "entryHash" | "totalDebit" | "totalCredit" | "batchCount" | "blockCount") ? FileControls[Field]["value"] : never);
+    get<Field extends keyof FileHeaders | keyof FileControls = keyof FileHeaders>(field: Field): (Field extends ("immediateDestination" | "immediateOrigin" | "fileCreationDate" | "fileCreationTime" | "fileIdModifier" | "immediateDestinationName" | "immediateOriginName" | "referenceCode") | ("recordTypeCode" | "priorityCode" | "recordSize" | "blockingFactor" | "formatCode") ? FileHeaders[Field]["value"] : never) | (Field extends "recordTypeCode" | ("addendaCount" | "entryHash" | "totalDebit" | "totalCredit" | "batchCount" | "blockCount") | "reserved" ? FileControls[Field]["value"] : never);
     set<Key extends keyof FileHeaders | keyof FileControls = keyof FileHeaders>(field: Key, value: string | number): string | number | undefined;
 }
