@@ -70,7 +70,7 @@ export default class Batch extends achBuilder<'Batch'> {
 
     if (options.effectiveEntryDate) {
       if (typeof options.effectiveEntryDate == 'string') {
-        options.effectiveEntryDate = parseYYMMDD(options.effectiveEntryDate);
+        options.effectiveEntryDate = parseYYMMDD(options.effectiveEntryDate as `${number}`);
       }
 
       this.header.effectiveEntryDate.value = formatDateToYYMMDD(options.effectiveEntryDate);
@@ -140,10 +140,10 @@ export default class Batch extends achBuilder<'Batch'> {
         } else if (debitCodes.includes(entry.fields.transactionCode.value as NumericalString)) {
           totalDebit += entry.fields.amount.value;
         } else {
-          // throw new nACHError({
-          //   name: 'Transaction Code Error',
-          //   message: `Transaction code ${entry.fields.transactionCode.value} did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)`
-          // })
+          console.info(
+            '[Batch::addEntry] Unsupported Transaction Code ->',
+            `Transaction code ${entry.fields.transactionCode.value} did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)`,
+          )
         }
       }
     });
@@ -159,15 +159,16 @@ export default class Batch extends achBuilder<'Batch'> {
 
   generateHeader() { return generateString(this.header); }
   generateControl() { return generateString(this.control); }
-  generateEntries() {
-    return this._entries.map(entry => entry.generateString()).join('\r\n');
+  async generateEntries() {
+    return (await Promise.all(this._entries.map(async (entry) => await entry.generateString()))).join('\r\n');
   }
-  generateString(): string {
-    const headerString = this.generateHeader();
-    const entriesString = this.generateEntries();
-    const controlString = this.generateControl();
+
+  async generateString() {
+    const headerString = await this.generateHeader();
+    const entriesString = await this.generateEntries();
+    const controlString = await this.generateControl();
   
-    return headerString + '\r\n' + entriesString + controlString;
+    return `${headerString}\r\n${entriesString}${controlString}`;
   }
 
   isAHeaderField(field: keyof BatchHeaders|keyof BatchControls): field is keyof BatchHeaders {

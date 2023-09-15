@@ -1,20 +1,12 @@
-import fs, { writeFile } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import Batch from '../batch/Batch.js';
-import { BatchControls, BatchHeaders, BatchOptions } from '../batch/batchTypes.js';
-import { control as batchControls } from '../batch/control.js';
-import { header as batchHeaders } from '../batch/header.js';
 import achBuilder from '../class/achParser.js';
-import EntryAddenda from '../entry-addenda/EntryAddenda.js';
-import { fields as addendaFields } from '../entry-addenda/fields.js';
-import Entry from '../entry/Entry.js';
-import { EntryOptions } from '../entry/entryTypes.js';
-import { fields as entryFields } from '../entry/fields.js';
+import { highLevelFileOverrides } from '../overrides.js';
 import { computeCheckDigit, generateString, getNextMultiple, getNextMultipleDiff, pad } from '../utils.js';
 import validations from '../validate.js';
 import { FileControls, FileHeaders, FileOptions, HighLevelFileOverrides } from './FileTypes.js';
 import { fileControls } from './control.js';
 import { fileHeaders } from './header.js';
-import { highLevelFileOverrides } from '../overrides.js';
 
 export default class File extends achBuilder<'File'> {
   overrides: HighLevelFileOverrides[];
@@ -23,7 +15,13 @@ export default class File extends achBuilder<'File'> {
   private _batches: Array<Batch> = [];
   private _batchSequenceNumber = 0;
 
-  constructor(options: FileOptions, autoValidate = true, debug = false) {
+  /**
+   * 
+   * @param {FileOptions} options
+   * @param {boolean} autoValidate
+   * @param {boolean} debug
+   */
+  constructor(options: FileOptions, autoValidate: boolean = true, debug: boolean = false) {
     super({ options, name: 'File', debug });
 
     this.overrides = highLevelFileOverrides;
@@ -100,7 +98,7 @@ export default class File extends achBuilder<'File'> {
   generateHeader() { return generateString(this.header); }
   generateControl() { return generateString(this.control); }
 
-  generateBatches(){
+  async generateBatches(){
     let result = '';
     let rows = 2;
 
@@ -110,7 +108,7 @@ export default class File extends achBuilder<'File'> {
     let totalDebit = 0;
     let totalCredit = 0;
 
-    for (const batch of this._batches) {
+    for await (const batch of this._batches) {
       totalDebit += batch.control.totalDebit.value;
       totalCredit += batch.control.totalCredit.value;
   
@@ -134,7 +132,7 @@ export default class File extends achBuilder<'File'> {
         rows = rows + 2;
   
         // Generate the batch after we've added the trace numbers
-        const batchString = batch.generateString();
+        const batchString = await batch.generateString();
         result += batchString + '\r\n';
       }
     }
@@ -151,27 +149,20 @@ export default class File extends achBuilder<'File'> {
     return { result, rows };
   }
 
-  generateFile(): Promise<string> {
-    return new Promise((resolve, reject) => {
-      try {
-        // Generate the batches
-        const { result: batchString, rows } = this.generateBatches();
+  async generateFile(): Promise<string> {
+    const { result: batchString, rows } = await this.generateBatches();
   
-        // Generate the file header
-        const header = this.generateHeader();
-  
-        // Generate the file control
-        const control = this.generateControl();
-  
-        // Generate the padded rows
-        const paddedRows = this.generatePaddedRows(getNextMultipleDiff(rows, 10));
-  
-        // Resolve the promise with the full file string
-        resolve(header + '\r\n' + batchString + control + paddedRows);
-      } catch (e) {
-        reject(e);
-      }
-    })
+    // Generate the file header
+    const header = await this.generateHeader();
+
+    // Generate the file control
+    const control = await this.generateControl();
+
+    // Generate the padded rows
+    const paddedRows = this.generatePaddedRows(getNextMultipleDiff(rows, 10));
+
+    // Resolve the promise with the full file string
+    return `${header}\r\n${batchString}${control}${paddedRows}`;
   }
 
   async writeFile(path: string){
@@ -182,101 +173,6 @@ export default class File extends achBuilder<'File'> {
       console.error('[node-natcha::File:writeFile] - Error', error);
       throw error;
     }
-  }
-
-  static async parseFile(filePath: string, debug = false) {
-    try {
-      const data = await fs.readFile(filePath, { encoding: 'utf-8' });
-      const file = await this.parse(data, debug);
-      return file;
-    } catch (err) {
-      console.error('[node-natcha::File:parseFile] - Error', err);
-      throw err;
-    }
-  }
-
-  static parse(str: string, debug: boolean): Promise<File> {
-    const parseLine = (str: string, object: Record<string, Record<string, unknown> & { width: number }>): Record<string, string> => {
-      let pos = 0;
-    
-      return Object.keys(object).reduce((result: Record<string, string>, key: string) => {
-        const field = object[key];
-        result[key] = str.substring(pos, pos + field.width).trim();
-        pos += field.width;
-        return result;
-      }, {});
-    }
-
-    return new Promise((resolve, reject) => {
-      if (!str || !str.length) { reject('Input string is empty'); return; }
-
-      const lines = Array.from({ length: Math.ceil(str.length / 94) }, (_, i) => str.substr(i * 94, 94));
-
-      const file: Partial<FileOptions> = {};
-      const batches: Array<Partial<BatchOptions> & { entry: Array<Entry> }> = [];
-      let batchIndex = 0;
-      let hasAddenda = false;
-
-      lines.forEach((line) => {
-        try {
-          console.log('line:', line); // Add this
-          if (!line || !line.length) return;
-          line = line.trim();
-          const lineType = parseInt(line[0]);
-          console.log('lineType:', lineType); // And this
-
-          if (lineType === 1) file.header = parseLine(line, fileHeaders) as unknown as FileHeaders;
-          if (lineType === 9) file.control = parseLine(line, fileControls) as unknown as FileControls;
-          if (lineType === 5){
-            batches.push({
-              header: parseLine(line, batchHeaders) as unknown as BatchHeaders,
-              entry: [],
-            });
-          }
-          if (lineType === 8) {
-            batches[batchIndex].control = parseLine(line, batchControls) as unknown as BatchControls;
-            batchIndex++;
-          }
-          if (lineType === 6){
-            batches[batchIndex].entry.push(
-              new Entry(parseLine(line, entryFields) as unknown as EntryOptions, undefined, debug)
-            );
-          }
-          if (lineType === 7) {
-            batches[batchIndex]
-              .entry[batches[batchIndex].entry.length - 1]
-              .addAddenda(
-                new EntryAddenda(parseLine(line, addendaFields), undefined, debug)
-              );
-            hasAddenda = true;
-          }
-        } catch (error) {
-          console.log('[node-natcha::File:parse] - Error', error)
-          reject(error);
-        }
-        
-      });
-
-      if (!file.header) { reject('File header missing or not parsable error'); return; } 
-      if (!file.control){ reject('File control missing or not parsable error'); return; }
-      if (!batches.length) { reject('No batches found'); return; }
-
-      try {
-        const nachFile = new File(file.header as unknown as FileOptions, !hasAddenda, debug);
-
-        batches.forEach((batchOb) => {
-          const batch = new Batch(batchOb.header as unknown as BatchOptions, undefined, debug);
-          batchOb.entry.forEach((entry) => {
-            batch.addEntry(entry);
-          });
-          nachFile.addBatch(batch);
-        });
-
-        resolve(nachFile);
-      } catch (e) {
-        reject(e);
-      }
-    });
   }
 
   isAHeaderField(field: keyof FileHeaders|keyof FileControls): field is keyof FileHeaders {

@@ -1,7 +1,7 @@
 const chai = require('chai');
 const expect = chai.expect;
 const moment = require('moment');
-const { generateString, pad, formatDateToYYMMDD, formatTime } = require('../lib/utils.js');
+const { generateString, pad, formatDateToYYMMDD, formatTime, parseYYMMDD } = require('../lib/utils.js');
 
 describe('Utils', function() {
   describe('pad', function() {
@@ -28,6 +28,16 @@ describe('Utils', function() {
       }).not.to.throw('Not passing object correctly.');
     });
   });
+
+  describe('parseYYMMDD', function() {
+    it('Should parse \'180101\' correctly into a Date', function() {
+      const date = parseYYMMDD('180101');
+
+      expect(date.getFullYear()).to.equal(2018);
+      expect(date.getMonth()).to.equal(0);
+      expect(date.getDate()).to.equal(1);
+    })
+  })
 
   describe('YYMMDD', function() {
     it('Must return the current date', function() {

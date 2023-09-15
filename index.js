@@ -1,8 +1,7 @@
-module.exports.Entry = require('./lib/entry');
-module.exports.EntryAddenda = require('./lib/entry-addenda');
-module.exports.Batch = require('./lib/batch');
-module.exports.File  = require('./lib/file');
-module.exports.Utils  = require('./lib/utils');
-module.exports.Validate  = require('./lib/validate');
-module.exports.parse = module.exports.File.parse;
-module.exports.parseFile = module.exports.File.parseFile;
+module.exports.Entry = require('./lib/entry/Entry.js');
+module.exports.EntryAddenda = require('./lib/entry-addenda/EntryAddenda.js');
+module.exports.Batch = require('./lib/batch/Batch.js');
+module.exports.File  = require('./lib/file/File.js');
+module.exports.NACHParser = require('./lib/file/FileParser.js');
+module.exports.Utils  = require('./lib/utils.js');
+module.exports.Validate  = require('./lib/validate.js');

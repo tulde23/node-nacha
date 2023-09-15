@@ -34,7 +34,7 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
               name: field.name,
               value: field.value,
               required: field.required,
-              length: (field.value) ? field.value.toString().length : undefined,
+              length: field.value.toString().length,
             })
           }
     
@@ -84,7 +84,7 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
         if (field.value.toString().length > field.width) {
           throw new nACHError({
             name: 'Invalid Length',
-            message: `${field.name}'s length is ${typeof field.value === 'number' ? field.value.toString().length : field.value.length}, but it should be no greater than ${field.width}.`
+            message: `${field.name}'s length is ${(typeof field.value === 'number') ? field.value.toString().length : field.value.length}, but it should be no greater than ${field.width}.`
           });
         }
       });
@@ -95,11 +95,12 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
       Object.keys(object).forEach((k) => {
         const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
     
-        if (('blank' in field) === false || ('blank' in field && field.blank !== true)) {
+        if (('blank' in field) === false || ('blank' in field && field.blank === false)) {
           switch (field.type) {
             case 'numeric': { testRegex(numericRegex, field); break; }
             case 'alpha': { testRegex(alphaRegex, field); break; }
             case 'alphanumeric':{ testRegex(alphanumericRegex, field); break; }
+            case 'ABA': { break; }
             default: {
               throw new nACHError({
                 name: 'Invalid Data Type',

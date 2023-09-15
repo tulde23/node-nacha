@@ -1,22 +1,22 @@
-# NODE-nACH
+# nACHos
 
 [![npm](https://img.shields.io/npm/v/nach2.svg?maxAge=2592000)](https://www.npmjs.com/package/node-nach)
 [![Travis](https://img.shields.io/travis/glenselle/nACH.svg?maxAge=2592000)](https://travis-ci.org/wilix-team/node-nach)
 [![Dependencies](https://david-dm.org/wilix-team/node-nach.svg)](https://david-dm.org/wilix-team/node-nach)
 
-nACH is a Node.js module exposing both a high & low-level API for generating ACH (Automated Clearing House) files for use within the ACH network. It's design makes it a high-performance, dependable and frustration-free solution for developers.
+nACHos is a library for generating or parsing ACH (Automated Clearing House) files for use within the ACH network, written in typescript. It's based off the repo Node-nACH, but rewritten to drop all the dependencies, fix the outstanding bugs, and modernize the syntax. I hope it's an even more high-performance, dependable and frustration-free solution for developers than the original, which did an amazing job. 
 
- Note: nACH does not bundle a bank agreement/partnership to upload ACH files to the network :)
+ Note: nACHos does not bundle a bank agreement/partnership to upload ACH files to the network :)
 
 ## Getting Started
-To intall nACH, use NPM:
+To intall nACHos, use NPM:
 
-    $ npm i node-nach --save-dev
+    $ npm i @assetval/nachos --save
 
 Then include the NPM module like so:
 
-```js
-const nach = require('node-nach')
+```typescript
+import { EntryAddenda, Entry, Batch, File, nACHParser } from '@assetval/nachos';
 ```
 
 Now you're ready to start creating ACH files.
@@ -71,8 +71,8 @@ As seen above, each file has one file header and one file control (similar to a 
 
 To create a file:
 
-```js
-var file = new nach.File({
+```typescript
+const file = new File({
     immediateDestination: '081000032',
     immediateOrigin: '123456789',
     immediateDestinationName: 'Some Bank',
@@ -83,8 +83,8 @@ var file = new nach.File({
 
 To create a batch
 
-```js
-var batch = new nach.Batch({
+```typescript
+const batch = new Batch({
     serviceClassCode: '220',
     companyName: 'Your Company Inc',
     standardEntryClassCode: 'WEB',
@@ -98,8 +98,8 @@ var batch = new nach.Batch({
 
 To create an entry
 
-```js
-var entry = new nach.Entry({
+```typescript
+const entry = new Entry({
     receivingDFI: '081000210',
     DFIAccount: '5654221',
     amount: '175',
@@ -112,8 +112,8 @@ var entry = new nach.Entry({
 
 To add one or more optional addenda records to an entry
 
-```js
-var addenda = new nach.EntryAddenda({
+```typescript
+const addenda = new EntryAddenda({
     paymentRelatedInformation: "0123456789ABCDEFGJIJKLMNOPQRSTUVWXYXabcdefgjijklmnopqrstuvwxyx"
 });
 entry.addAddenda(addenda);
@@ -121,39 +121,29 @@ entry.addAddenda(addenda);
 
 Entries are added to batches like so
 
-```js
+```typescript
 batch.addEntry(entry);
 ```
 
 And batches are added to files much the same way
 
-```js
+```typescript
 file.addBatch(batch);
 ```
 
 Finally to generate the file & write it to a text file
 
-```js
+```typescript
 // Generate the file (result is a string with the file contents)
-file.generateFile(function(err, result) {
-
-    // Write result to a NACHA.txt file
-    fs.writeFile('NACHA.txt', result, function(err) {
-        if(err) console.log(err);
-
-        // Log the output
-        console.log(fileString);
-    });
-});
+const fileString = await file.generateFile();
+const file = await fs.writeFile('./nach.txt', fileString);
 ```
 
 Or you can use internal write method  
 
-```js
+```typescript
 // Generate the file (result is a string with the file contents)
-file.writeFile('./nach.txt', function(err) {
-    console.log('File writed');
-});
+await file.writeFile('./nach.txt');
 ```
 
 ## Tests
@@ -161,26 +151,3 @@ Test coverage is currently a work in progress. To run:
 
     $ npm test
 
-## License
-
-The MIT License (MIT)
-
-Copyright (c) 2016 Glen Selle
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.

@@ -5,7 +5,7 @@ const expect = chai.expect;
 
 describe('Entry', function() {
   describe('Create Entry', function() {
-    it('should create an entry successfully', function() {
+    it('should create an entry successfully', async() => {
       const entry = new Entry({
         receivingDFI: '081000210',
         DFIAccount: '12345678901234567',
@@ -16,7 +16,7 @@ describe('Entry', function() {
         discretionaryData: 'A1'
       }, true, true);
 
-      console.log(entry.generateString())
+      console.log(await entry.generateString())
 
       expect(entry).to.not.equal(undefined);
       expect(entry).to.be.an.instanceof(Entry);
@@ -24,7 +24,7 @@ describe('Entry', function() {
   });
 
   describe('Create Entry with addenda', function() {
-    it('should create an entry with an addenda successfully', function() {
+    it('should create an entry with an addenda successfully', async() => {
       const entry = new Entry({
         receivingDFI: '081000210',
         DFIAccount: '12345678901234567',
@@ -57,7 +57,7 @@ describe('Entry', function() {
       expect(addenda2.get('addendaSequenceNumber')).to.equal(2);
       expect(addenda2.get('entryDetailSequenceNumber')).to.equal('1234567');
 
-      console.log(entry.generateString());
+      console.log(await entry.generateString());
     });
   });
 });

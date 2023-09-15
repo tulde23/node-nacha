@@ -34,9 +34,9 @@ export function computeCheckDigit(routing: `${number}`|number): `${number}` {
   if (typeof routing === 'number') routing = routing.toString() as `${number}`;
   const a = routing.split('').map(Number);
 
-  const value = a.length !== 8
+  const value = (a.length !== 8)
     ? routing
-    : routing + (7 * (a[0] + a[3] + a[6]) + 3 * (a[1] + a[4] + a[7]) + 9 * (a[2] + a[5])) % 10 as `${number}`;
+    : (routing + (7 * (a[0] + a[3] + a[6]) + 3 * (a[1] + a[4] + a[7]) + 9 * (a[2] + a[5])) % 10 as `${number}`);
 
     return value;
 }
@@ -45,7 +45,7 @@ export function computeCheckDigit(routing: `${number}`|number): `${number}` {
 export function testRegex(regex: RegExp, field: { number?: boolean; value: unknown; name: string; type: string; }) {
   const string: string = field.number
   ? parseFloat(field.value as string).toFixed(2).replace(/\./, '')
-  : field.value as string;
+  : (field.value as string);
 
   if (!regex.test(string)) {
     throw new nACHError({
@@ -57,31 +57,33 @@ export function testRegex(regex: RegExp, field: { number?: boolean; value: unkno
   return true;
 }
 
-export function generateString(object: EntryFields|EntryAddendaFields|BatchHeaders|BatchControls|FileHeaders|FileControls): string {
-  let counter = 1;
-  let result = '';
-  const objectCount = Object.keys(object).length;
+export function generateString(object: EntryFields|EntryAddendaFields|BatchHeaders|BatchControls|FileHeaders|FileControls): Promise<string> {
+  return new Promise((resolve) => {
+    let counter = 1;
+    let result = '';
+    const objectCount = Object.keys(object).length;
 
-  while (counter < objectCount) {
-    Object.values(object).forEach((field: EntryFields[EntryFieldKeys]|EntryAddendaFields[EntryAddendaFieldKeys]|BatchHeaders[BatchHeaderKeys]) => {
-      if (field.position === counter) {
-        if (field.value && (('blank' in field && field.blank === true) || field.type === 'alphanumeric')) {
-          result = result + pad(field.value, field.width);
-        } else {
-          const string = ('number' in field && field.number)
-            ? parseFloat(field.value as string).toFixed(2).replace(".", "")
-            : field.value as string;
+    while (counter < objectCount) {
+      Object.values(object).forEach((field: EntryFields[EntryFieldKeys]|EntryAddendaFields[EntryAddendaFieldKeys]|BatchHeaders[BatchHeaderKeys]) => {
+        if (field.position === counter) {
+          if (field.value && (('blank' in field && field.blank === true) || field.type === 'alphanumeric')) {
+            result = result + pad(field.value, field.width);
+          } else {
+            const string = ('number' in field && field.number)
+              ? parseFloat(field.value as string).toFixed(2).replace('.', '')
+              : (field.value as string);
 
-          const paddingChar = ('paddingChar' in field) ? field.paddingChar : '0';
+            const paddingChar = ('paddingChar' in field) ? field.paddingChar : '0';
 
-          result = result + pad(string, field.width, false, paddingChar);
+            result = result + pad(string, field.width, false, paddingChar);
+          }
+          counter++;
         }
-        counter++;
-      }
-    });
-  }
-  
-  return result;
+      });
+    }
+    
+    resolve(result);
+  })
 }
 
 export function compareSets(set1: Set<string>, set2: Set<string>) {
@@ -118,14 +120,19 @@ export function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddend
 export function unique() { return counter++; }
 
 export function getNextMultiple(value: number, multiple: number) {
-  return value % multiple == 0 ? value : value + (multiple - value % multiple);
+  return (value % multiple == 0) ? value : (value + (multiple - value % multiple));
 }
 
 export function getNextMultipleDiff(value: number, multiple: number) {
   return (getNextMultiple(value, multiple) - value);
 }
 
-export function parseYYMMDD(dateString: string) {
+/**
+ * 
+ * @param dateString 
+ * @returns 
+ */
+export function parseYYMMDD(dateString: `${number}`) {
   const year = dateString.slice(0, 2);
   const month = dateString.slice(2, 4);
   const day = dateString.slice(4, 6);

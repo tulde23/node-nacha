@@ -9,13 +9,18 @@ import { fields } from './fields.js';
 export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
   fields: EntryAddendaFields;
 
-  constructor(options: EntryAddendaOptions, autoValidate: boolean = true, debug = false) {
+  /**
+   * @param {EntryAddendaOptions} options
+   * @param {boolean} autoValidate - optional / defaults to true
+   * @param {boolean} debug - optional / defaults to false
+   */
+  constructor(options: EntryAddendaOptions, autoValidate: boolean = true, debug: boolean = false) {
     super({ options, name: 'EntryAddenda', debug });
 
     this.overrides = highLevelAddendaFieldOverrides;
     this.fields = options.fields
-      ? { ...options.fields, ...fields } satisfies EntryAddendaFields
-      : fields as EntryAddendaFields;
+      ? ({ ...options.fields, ...fields } satisfies EntryAddendaFields)
+      : (fields as EntryAddendaFields);
 
     const { overrides, typeGuards } = this;
 
@@ -23,21 +28,19 @@ export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
     && Array.isArray(overrides)
     && typeGuards.isEntryAddendaOverrides(overrides)
     && typeGuards.isEntryAddendaOptions(options)){
-    overrides.forEach((field) => {
-      if (field in options && options[field] !== undefined) this.set(field, options[field] as NonNullable<typeof options[typeof field]>);
-    });
-  } else{
-    if (this.debug){
-      console.debug('[overrideOptions::Failed Because]', {
-        fieldsInThis: 'fields' in this,
-        overridesIsArray: Array.isArray(overrides),
-        isEntryAddendaOverrides: typeGuards.isEntryAddendaOverrides(overrides),
-        isEntryAddendaOptions: typeGuards.isEntryAddendaOptions(options),
-      })
+      overrides.forEach((field) => {
+        if (field in options && options[field] !== undefined) this.set(field, options[field] as NonNullable<typeof options[typeof field]>);
+      });
+    } else{
+      if (this.debug){
+        console.debug('[overrideOptions::Failed Because]', {
+          fieldsInThis: 'fields' in this,
+          overridesIsArray: Array.isArray(overrides),
+          isEntryAddendaOverrides: typeGuards.isEntryAddendaOverrides(overrides),
+          isEntryAddendaOptions: typeGuards.isEntryAddendaOptions(options),
+        })
+      }
     }
-  }
-
-  
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.returnCode) {

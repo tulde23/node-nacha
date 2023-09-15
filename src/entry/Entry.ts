@@ -7,11 +7,20 @@ import validations from '../validate.js';
 import { EntryFields, EntryOptions } from './entryTypes.js';
 import { fields } from './fields.js';
 
+/**
+ * @class Entry
+ */
 export default class Entry extends achBuilder<'Entry'>{
   fields!: EntryFields;
   _addendas: Array<EntryAddenda> = [];
 
-  constructor(options: EntryOptions, autoValidate = true, debug = false) {
+  /**
+   * @param {EntryOptions} options - required
+   * @param {boolean} autoValidate - optional / defaults to true
+   * @param {boolean} debug - optional / defaults to false
+   * @returns {Entry}
+   */
+  constructor(options: EntryOptions, autoValidate: boolean = true, debug: boolean = false) {
     super({ options: options, name: 'Entry', debug });
 
     this.overrides = highLevelFieldOverrides;
@@ -90,7 +99,6 @@ export default class Entry extends achBuilder<'Entry'>{
 
   addAddenda(entryAddenda: EntryAddenda) {
     const traceNumber = this.get('traceNumber');
-    console.info({ traceNumber})
 
     // Add indicator to Entry record
     this.set('addendaId', '1');
@@ -140,13 +148,14 @@ export default class Entry extends achBuilder<'Entry'>{
     }
   }
 
-  generateString(){
-    const result = generateString(this.fields);
+  async generateString(){
+    const result = [await generateString(this.fields)];
 
-    return [
-      result, // Solves -> https://github.com/wilix-team/node-nach/issues/1
-      this._addendas.map(((addenda) => addenda.generateString())).join('\r\n')
-    ].join('\r\n');
+    for await (const addenda of this._addendas) {
+      result.push(await addenda.generateString());
+    }
+
+    return result.join('\r\n');
   }
 
   get<Key extends keyof EntryFields = keyof EntryFields>(field: Key): this['fields'][Key]['value'] {

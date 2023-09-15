@@ -1,7 +1,7 @@
 {
-  "name": "node-nach",
-  "description": "nACH is a highly customizable Node.js module exposing a high & low-level API for generating ACH files for use within the ACH network",
-  "version": "0.6.3",
+  "name": "nachos",
+  "description": "nACHos is a library for generating ACH files for use within the ACH network, written in typescript, with no dependencies",
+  "version": "1.0.0",
   "keywords": [
     "ACH",
     "file",
@@ -9,23 +9,6 @@
     "NACH"
   ],
   "contributors": [
-    {
-      "name": "Aloyan Dmitry",
-      "email": "root@wilix.org"
-    },
-    {
-      "name": "Glen Selle",
-      "email": "glenselle@me.com"
-    },
-    {
-      "name": "Tom Horner",
-      "email": "tom.horner@zipline.co"
-    },
-    {
-      "name": "Yaw Joseph Etse",
-      "email": "yaw.etse@gmail.com",
-      "url": "http://about.me/yawjosephetse"
-    },
     {
       "name": "Antonio Bourassa",
       "email": "abourassa@assetval.com"
@@ -36,18 +19,13 @@
     "url": "https://github.com/AssetVal/node-nacha.git"
   },
   "engines": {
-    "node": ">= 0.10.0"
+    "node": ">= 17.0.0"
   },
   "scripts": {
-    "test": "NODE_ENV=test ./node_modules/.bin/mocha --reporter spec --recursive",
-    "test-ts": "NODE_ENV=test ./node_modules/.bin/mocha --reporter spec --recursive \"./test/parse.spec.js\""
-  },
-  "dependencies": {
-    "async": "^2.0.1",
-    "lodash": "^4.14.1",
-    "moment": "^2.22.0"
+    "test": "NODE_ENV=test ./node_modules/.bin/mocha --reporter spec --recursive"
   },
   "devDependencies": {
+    "@getify/eslint-plugin-proper-ternary": "^3.1.1",
     "@types/chai": "^4.3.6",
     "@types/mocha": "^10.0.1",
     "@types/node": "^20.5.9",
@@ -56,6 +34,7 @@
     "chai": "^4.3.8",
     "eslint": "^8.48.0",
     "mocha": "^10.2.0",
+    "moment": "^2.29.4",
     "typescript": "^5.2.2"
   }
 }

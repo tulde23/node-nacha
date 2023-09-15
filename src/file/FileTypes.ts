@@ -7,8 +7,8 @@ export type HighLevelFileOverrides = 'immediateDestination'|'immediateOrigin'|'f
 //=================
 export type FileHeaderKeys = 'recordTypeCode'|'priorityCode'|'immediateDestination'|'immediateOrigin'|'fileCreationDate'|'fileCreationTime'|'fileIdModifier'|'recordSize'|'blockingFactor'|'formatCode'|'immediateDestinationName'|'immediateOriginName'|'referenceCode';
 
-type FileHeaderKeysWithStringFields = "immediateDestination"|"immediateOrigin"|"fileCreationDate"|"fileCreationTime"|"fileIdModifier"|"immediateDestinationName"|"immediateOriginName"|"referenceCode";
-type FileHeaderKeysWithNumericalStringFields = "recordTypeCode"|"priorityCode"|"recordSize"|"blockingFactor"|"formatCode";
+type FileHeaderKeysWithStringFields = 'immediateDestination'|'immediateOrigin'|'fileCreationDate'|'fileCreationTime'|'fileIdModifier'|'immediateDestinationName'|'immediateOriginName'|'referenceCode';
+type FileHeaderKeysWithNumericalStringFields = 'recordTypeCode'|'priorityCode'|'recordSize'|'blockingFactor'|'formatCode';
 
 // File Header Field
 type FileHeaderField<Key extends FileHeaderKeys = FileHeaderKeys> = { name: CamelToTitleCase<Key>; paddingChar?: string } & BaseFieldParams;
