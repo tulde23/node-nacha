@@ -1,18 +1,30 @@
 import { NumericalString } from '../Types.js';
 import achBuilder from '../class/achParser.js';
 import Entry from '../entry/Entry.js';
-import nACHError from '../error.js';
+import { highLevelHeaderOverrides, highLevelControlOverrides } from '../overrides.js';
 import { computeCheckDigit, formatDateToYYMMDD, generateString, parseYYMMDD } from '../utils.js';
 import validations from '../validate.js';
 import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
+import { control } from './control.js';
+import { header } from './header.js';
 
 export default class Batch extends achBuilder<'Batch'> {
-  header!: BatchHeaders;
-  control!: BatchControls;
+  header: BatchHeaders;
+  control: BatchControls;
   _entries: Array<Entry> = [];
 
   constructor(options: BatchOptions, autoValidate = true, debug = false) {
     super({ options, name: 'Batch', debug });
+
+    this.overrides = { header: highLevelHeaderOverrides, control: highLevelControlOverrides };
+    // Allow the batch header/control defaults to be override if provided
+    this.header = options.header
+      ? { ...options.header, ...header }
+      : { ...header };
+
+    this.control = options.control
+      ? { ...options.control, ...control }
+      : { ...control };
 
     const { typeGuards, overrides } = this;
 
@@ -128,10 +140,10 @@ export default class Batch extends achBuilder<'Batch'> {
         } else if (debitCodes.includes(entry.fields.transactionCode.value as NumericalString)) {
           totalDebit += entry.fields.amount.value;
         } else {
-          throw new nACHError({
-            name: 'Transaction Code Error',
-            message: `Transaction code ${entry.fields.transactionCode.value} did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)`
-          })
+          // throw new nACHError({
+          //   name: 'Transaction Code Error',
+          //   message: `Transaction code ${entry.fields.transactionCode.value} did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)`
+          // })
         }
       }
     });

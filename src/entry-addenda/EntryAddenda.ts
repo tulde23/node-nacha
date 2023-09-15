@@ -1,14 +1,21 @@
 import { NumericalString } from '../Types.js';
 import achBuilder from '../class/achParser.js';
+import { highLevelAddendaFieldOverrides } from '../overrides.js';
 import { generateString } from '../utils.js';
 import validations from '../validate.js';
 import { EntryAddendaFields, EntryAddendaOptions } from './entryAddendaTypes.js';
+import { fields } from './fields.js';
 
 export default class EntryAddenda extends achBuilder<'EntryAddenda'> {
-  fields!: EntryAddendaFields;
+  fields: EntryAddendaFields;
 
   constructor(options: EntryAddendaOptions, autoValidate: boolean = true, debug = false) {
     super({ options, name: 'EntryAddenda', debug });
+
+    this.overrides = highLevelAddendaFieldOverrides;
+    this.fields = options.fields
+      ? { ...options.fields, ...fields } satisfies EntryAddendaFields
+      : fields as EntryAddendaFields;
 
     const { overrides, typeGuards } = this;
 

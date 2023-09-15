@@ -1,7 +1,8 @@
 import Batch from '../batch/Batch.js';
 import achBuilder from '../class/achParser.js';
-import { FileControls, FileHeaders, FileOptions } from './FileTypes.js';
+import { FileControls, FileHeaders, FileOptions, HighLevelFileOverrides } from './FileTypes.js';
 export default class File extends achBuilder<'File'> {
+    overrides: HighLevelFileOverrides[];
     header: FileHeaders;
     control: FileControls;
     private _batches;

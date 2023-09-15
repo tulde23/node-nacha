@@ -1,9 +1,11 @@
 import { NumericalString } from '../Types.js';
 import achBuilder from '../class/achParser.js';
 import EntryAddenda from '../entry-addenda/EntryAddenda.js';
+import { highLevelFieldOverrides } from '../overrides.js';
 import { addNumericalString, computeCheckDigit, generateString } from '../utils.js';
 import validations from '../validate.js';
 import { EntryFields, EntryOptions } from './entryTypes.js';
+import { fields } from './fields.js';
 
 export default class Entry extends achBuilder<'Entry'>{
   fields!: EntryFields;
@@ -11,6 +13,11 @@ export default class Entry extends achBuilder<'Entry'>{
 
   constructor(options: EntryOptions, autoValidate = true, debug = false) {
     super({ options: options, name: 'Entry', debug });
+
+    this.overrides = highLevelFieldOverrides;
+    this.fields = options.fields
+      ? { ...options.fields, ...fields }
+      : fields;
 
     const { typeGuards, overrides } = this;
 
@@ -137,9 +144,9 @@ export default class Entry extends achBuilder<'Entry'>{
     const result = generateString(this.fields);
 
     return [
-      result,
-      this._addendas.map(((addenda) => addenda.generateString())).join('\n')
-    ].join('\n');
+      result, // Solves -> https://github.com/wilix-team/node-nach/issues/1
+      this._addendas.map(((addenda) => addenda.generateString())).join('\r\n')
+    ].join('\r\n');
   }
 
   get<Key extends keyof EntryFields = keyof EntryFields>(field: Key): this['fields'][Key]['value'] {

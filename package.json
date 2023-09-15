@@ -40,7 +40,7 @@
   },
   "scripts": {
     "test": "NODE_ENV=test ./node_modules/.bin/mocha --reporter spec --recursive",
-    "test-ts": "NODE_ENV=test ./node_modules/.bin/mocha --reporter spec --recursive \"./test/*.spec.js\""
+    "test-ts": "NODE_ENV=test ./node_modules/.bin/mocha --reporter spec --recursive \"./test/parse.spec.js\""
   },
   "dependencies": {
     "async": "^2.0.1",

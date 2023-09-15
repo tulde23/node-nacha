@@ -10,20 +10,30 @@ import Entry from '../entry/Entry.js';
 import { EntryOptions } from '../entry/entryTypes.js';
 import { fields as entryFields } from '../entry/fields.js';
 import { computeCheckDigit, generateString, getNextMultiple, getNextMultipleDiff, pad } from '../utils.js';
-import { FileControls, FileHeaders, FileOptions } from './FileTypes.js';
+import validations from '../validate.js';
+import { FileControls, FileHeaders, FileOptions, HighLevelFileOverrides } from './FileTypes.js';
 import { fileControls } from './control.js';
 import { fileHeaders } from './header.js';
-import validations from '../validate.js';
-import nACHError from '../error.js';
+import { highLevelFileOverrides } from '../overrides.js';
 
 export default class File extends achBuilder<'File'> {
-  header!: FileHeaders;
-  control!: FileControls;
+  overrides: HighLevelFileOverrides[];
+  header: FileHeaders;
+  control: FileControls;
   private _batches: Array<Batch> = [];
   private _batchSequenceNumber = 0;
 
   constructor(options: FileOptions, autoValidate = true, debug = false) {
     super({ options, name: 'File', debug });
+
+    this.overrides = highLevelFileOverrides;
+
+    this.header = options.header
+      ? { ...options.header, ...fileHeaders }
+      : { ...fileHeaders };
+    this.control = options.control
+      ? { ...options.control, ...fileControls }
+      : { ...fileControls };
 
     if (('header' in this && 'control' in this)
         && this.typeGuards.isFileOverrides(this.overrides)
@@ -181,10 +191,7 @@ export default class File extends achBuilder<'File'> {
       return file;
     } catch (err) {
       console.error('[node-natcha::File:parseFile] - Error', err);
-      throw new nACHError({
-        name: 'File Parse Error',
-        message: err.message,
-      });
+      throw err;
     }
   }
 
@@ -203,9 +210,7 @@ export default class File extends achBuilder<'File'> {
     return new Promise((resolve, reject) => {
       if (!str || !str.length) { reject('Input string is empty'); return; }
 
-      const lines = (str.length <= 1)
-        ? Array.from({ length: Math.ceil(str.length / 94) }, (_, i) => str.substr(i * 94, 94))
-        : str.split('\n');
+      const lines = Array.from({ length: Math.ceil(str.length / 94) }, (_, i) => str.substr(i * 94, 94));
 
       const file: Partial<FileOptions> = {};
       const batches: Array<Partial<BatchOptions> & { entry: Array<Entry> }> = [];
@@ -214,8 +219,11 @@ export default class File extends achBuilder<'File'> {
 
       lines.forEach((line) => {
         try {
+          console.log('line:', line); // Add this
           if (!line || !line.length) return;
+          line = line.trim();
           const lineType = parseInt(line[0]);
+          console.log('lineType:', lineType); // And this
 
           if (lineType === 1) file.header = parseLine(line, fileHeaders) as unknown as FileHeaders;
           if (lineType === 9) file.control = parseLine(line, fileControls) as unknown as FileControls;

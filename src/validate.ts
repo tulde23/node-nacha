@@ -12,6 +12,7 @@ import { testRegex } from './utils.js';
 
 const numericRegex = /^[0-9]+$/;
 const alphaRegex = /^[a-zA-Z]+$/;
+// Solves -> https://github.com/wilix-team/node-nach/issues/4
 // eslint-disable-next-line no-useless-escape
 const alphanumericRegex = /(^[0-9a-zA-Z!"#$%&'()*+,-.\/:;<>=?@\[\]\\^_`{}|~ ]+$)|(^$)/;
 
