@@ -1,10 +1,10 @@
 import { NumericalString } from '../Types.js';
 import EntryAddenda from '../entry-addenda/EntryAddenda.js';
 import { highLevelFieldOverrides } from '../overrides.js';
-import { addNumericalString, computeCheckDigit, generateString } from '../utils.js';
+import { addNumericalString, computeCheckDigit, deepMerge, generateString } from '../utils.js';
 import validations from '../validate.js';
-import { EntryFields, EntryOptions, HighLevelFieldOverrides } from './entryTypes.js';
-import { fields as fieldDefaults } from './fields.js';
+import { EntryFields, EntryOptions } from './entryTypes.js';
+import { EntryFieldDefaults } from './fields.js';
 
 /**
  * @class Entry
@@ -14,7 +14,6 @@ import { fields as fieldDefaults } from './fields.js';
  * @param {boolean} debug - optional / defaults to false
  */
 export default class Entry {
-  public overrides = highLevelFieldOverrides;
   public debug: boolean;
 
   public fields: EntryFields;
@@ -30,12 +29,12 @@ export default class Entry {
     this.debug = debug;
 
     if (options.fields){
-      this.fields = { ...fieldDefaults, ...options.fields };
+      this.fields = deepMerge(EntryFieldDefaults, options.fields) as EntryFields;
     } else {
-      this.fields = { ...fieldDefaults } as EntryFields;
+      this.fields = deepMerge({}, EntryFieldDefaults) as EntryFields;
     }
 
-    this.overrides.forEach((field) => {
+    highLevelFieldOverrides.forEach((field) => {
       if (field in options){
         const value = options[field];
 
@@ -91,15 +90,12 @@ export default class Entry {
 
   addAddenda(entryAddenda: EntryAddenda) {
     const traceNumber = this.get('traceNumber');
-    console.info('Entry.addAddenda', { traceNumber })
 
     // Add indicator to Entry record
-    this.set('addendaId', '1');
+    this.fields.addendaId.value = '1';
 
-    const addendaSequenceNumber = this.addendas.length + 1;
-  
     // Set corresponding fields on Addenda
-    entryAddenda.set('addendaSequenceNumber', addendaSequenceNumber);
+    entryAddenda.set('addendaSequenceNumber', this.addendas.length + 1);
     entryAddenda.set('entryDetailSequenceNumber', traceNumber);
 
     // Add the new entryAddenda to the addendas array

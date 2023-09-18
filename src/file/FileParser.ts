@@ -1,17 +1,17 @@
 import { readFile } from 'fs/promises';
 import Batch from '../batch/Batch.js';
 import { BatchControls, BatchHeaders, BatchOptions } from '../batch/batchTypes.js';
-import { control as batchControls } from '../batch/control.js';
-import { header as batchHeaders } from '../batch/header.js';
+import { BatchControlDefaults } from '../batch/control.js';
+import { BatchHeaderDefaults } from '../batch/header.js';
 import EntryAddenda from '../entry-addenda/EntryAddenda.js';
-import { fields as addendaFields } from '../entry-addenda/fields.js';
+import { AddendaFieldDefaults } from '../entry-addenda/fields.js';
 import Entry from '../entry/Entry.js';
 import { EntryOptions } from '../entry/entryTypes.js';
-import { fields as entryFields } from '../entry/fields.js';
+import { EntryFieldDefaults } from '../entry/fields.js';
 import File from './File.js';
 import { FileControls, FileHeaders, FileOptions } from './FileTypes.js';
-import { fileControls } from './control.js';
-import { fileHeaders } from './header.js';
+import { FileControlDefaults } from './control.js';
+import { FileHeaderDefaults } from './header.js';
 
 export default class NACHParser {
   /**
@@ -66,28 +66,28 @@ export default class NACHParser {
           line = line.trim();
           const lineType = parseInt(line[0]);
 
-          if (lineType === 1) file.header = parseLine(line, fileHeaders) as unknown as FileHeaders;
-          if (lineType === 9) file.control = parseLine(line, fileControls) as unknown as FileControls;
+          if (lineType === 1) file.header = parseLine(line, FileHeaderDefaults) as unknown as FileHeaders;
+          if (lineType === 9) file.control = parseLine(line, FileControlDefaults) as unknown as FileControls;
           if (lineType === 5){
             batches.push({
-              header: parseLine(line, batchHeaders) as unknown as BatchHeaders,
+              header: parseLine(line, BatchHeaderDefaults) as unknown as BatchHeaders,
               entry: [],
             });
           }
           if (lineType === 8) {
-            batches[batchIndex].control = parseLine(line, batchControls) as unknown as BatchControls;
+            batches[batchIndex].control = parseLine(line, BatchControlDefaults) as unknown as BatchControls;
             batchIndex++;
           }
           if (lineType === 6){
             batches[batchIndex].entry.push(
-              new Entry(parseLine(line, entryFields) as unknown as EntryOptions, undefined, debug)
+              new Entry(parseLine(line, EntryFieldDefaults) as unknown as EntryOptions, undefined, debug)
             );
           }
           if (lineType === 7) {
             batches[batchIndex]
               .entry[batches[batchIndex].entry.length - 1]
               .addAddenda(
-                new EntryAddenda(parseLine(line, addendaFields), undefined, debug)
+                new EntryAddenda(parseLine(line, AddendaFieldDefaults), undefined, debug)
               );
             hasAddenda = true;
           }
@@ -120,4 +120,3 @@ export default class NACHParser {
     });
   }
 }
-module.exports = NACHParser;

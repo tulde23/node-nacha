@@ -1,12 +1,11 @@
 import { NumericalString } from '../Types.js';
 import { highLevelAddendaFieldOverrides } from '../overrides.js';
-import { generateString } from '../utils.js';
+import { deepMerge, generateString } from '../utils.js';
 import validations from '../validate.js';
 import { EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entryAddendaTypes.js';
-import { fields as AddendaDefaultFields } from './fields.js';
+import { AddendaFieldDefaults } from './fields.js';
 
 export default class EntryAddenda {
-  public overrides = highLevelAddendaFieldOverrides;
   public fields: EntryAddendaFields;
   public debug: boolean;
 
@@ -19,13 +18,14 @@ export default class EntryAddenda {
     this.debug = debug;
 
     if (options.fields) {
-      this.fields = { ...AddendaDefaultFields, ...options.fields };
+      this.fields = {...JSON.parse(JSON.stringify(AddendaFieldDefaults)) as Readonly<EntryAddendaFields>, ...options.fields } as EntryAddendaFields;
     } else {
-      this.fields = { ...AddendaDefaultFields } as EntryAddendaFields;
+      this.fields = JSON.parse(JSON.stringify(AddendaFieldDefaults)) as Readonly<EntryAddendaFields>;
     }
 
-    this.overrides.forEach((field) => {
-      if (options[field]) this.set(field, options[field] as NonNullable<typeof options[typeof field]>);
+    highLevelAddendaFieldOverrides.forEach((field) => {
+      const overrideValue = options[field];
+      if (overrideValue) this.set(field, overrideValue);
     });
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them

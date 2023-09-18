@@ -21,8 +21,7 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
 
   return {
     validateRequiredFields: (object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls|FileHeaders|FileControls) => {
-      Object.keys(object).forEach((k) => {
-        const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
+      Object.values(object).forEach((field) => {
         // This check ensures a required field's value is not NaN, null, undefined or empty.
         // Zero is valid, but the data type check will make sure any fields with 0 are numeric.
         if (
@@ -48,18 +47,18 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
       return true;
     },
     validateRoutingNumber: (routing: NumericalString|number) => {
-      if (typeof routing === 'number') routing = routing.toString() as NumericalString;
+      const tempRouting = `${routing}`
     
       // Make sure the routing number is exactly 9-digits long
-      if (routing.length !== 9) {
+      if (tempRouting.length !== 9) {
         throw new nACHError({
           name: 'Invalid ABA Number Length',
-          message: `The ABA routing number ${routing} is ${routing.length}-digits long, but it should be 9-digits long.`
+          message: `The ABA routing number ${routing} is ${tempRouting.length}-digits long, but it should be 9-digits long.`
         });
       }
     
       // Split the routing number into an array of numbers. `array` will look like this: `[2,8,1,0,8,1,4,7,9]`.
-      const array = routing.split('').map(Number);
+      const array = tempRouting.split('').map(Number);
     
       // Validate the routing number (ABA). See here for more info: http://www.brainjar.com/js/validation/
       const sum =
@@ -78,9 +77,7 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
       return true;
     },
     validateLengths: (object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls|FileHeaders|FileControls) => {
-      Object.keys(object).forEach((k) => {
-        const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
-    
+      Object.values(object).forEach((field) => {
         if (field.value.toString().length > field.width) {
           throw new nACHError({
             name: 'Invalid Length',
@@ -92,9 +89,7 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
       return true;
     },
     validateDataTypes: (object: EntryAddendaFields|EntryFields|BatchHeaders|BatchControls|FileHeaders|FileControls) => {
-      Object.keys(object).forEach((k) => {
-        const field = (object as EntryAddendaFields)[k as keyof EntryAddendaFields];
-    
+      Object.values(object).forEach((field) => {
         if (('blank' in field) === false || ('blank' in field && field.blank === false)) {
           switch (field.type) {
             case 'numeric': { testRegex(numericRegex, field); break; }
@@ -173,6 +168,3 @@ export default function validations(classDefinition: File|Batch|Entry|EntryAdden
 
 //   return true;
 // } //? WTF is this function for?
-
-
-module.exports = validations;

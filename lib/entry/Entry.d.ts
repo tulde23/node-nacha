@@ -1,5 +1,5 @@
 import EntryAddenda from '../entry-addenda/EntryAddenda.js';
-import { EntryFields, EntryOptions, HighLevelFieldOverrides } from './entryTypes.js';
+import { EntryFields, EntryOptions } from './entryTypes.js';
 /**
  * @class Entry
  * @description Entry class that will be used to create Entry objects
@@ -8,7 +8,6 @@ import { EntryFields, EntryOptions, HighLevelFieldOverrides } from './entryTypes
  * @param {boolean} debug - optional / defaults to false
  */
 export default class Entry {
-    overrides: HighLevelFieldOverrides[];
     debug: boolean;
     fields: EntryFields;
     addendas: Array<EntryAddenda>;

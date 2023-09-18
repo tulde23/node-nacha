@@ -1,6 +1,6 @@
 import { EntryFields } from './entryTypes.js';
 
-export const fields: EntryFields = {
+export const EntryFieldDefaults: Readonly<EntryFields> = {
   recordTypeCode: {
     name: 'Record Type Code',
     width: 1,
@@ -101,5 +101,3 @@ export const fields: EntryFields = {
     value: '' as `${number}`
   }
 };
-
-module.exports = { fields }

@@ -1,7 +1,7 @@
 import { NumericalString } from '../Types.js';
 import { EntryAddendaFields } from './entryAddendaTypes.js';
 
-export const fields: Partial<EntryAddendaFields> = {
+export const AddendaFieldDefaults: Readonly<Partial<EntryAddendaFields>> = {
   recordTypeCode: {
     name: 'Record Type Code',
     width: 1,
@@ -49,5 +49,3 @@ export const fields: Partial<EntryAddendaFields> = {
     value: '' as NumericalString
   }
 };
-
-module.exports = { fields };

@@ -1,6 +1,6 @@
 import { FileControls } from './FileTypes.js';
 
-export const fileControls: FileControls = {
+export const FileControlDefaults: Readonly<FileControls> = {
   recordTypeCode: {
     name: 'Record Type Code',
     width: 1,
@@ -68,5 +68,3 @@ export const fileControls: FileControls = {
     value: ''
   }
 };
-
-module.exports = { fileControls }

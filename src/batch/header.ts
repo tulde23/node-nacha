@@ -1,6 +1,6 @@
 import { BatchHeaders } from './batchTypes.js';
 
-export const header: BatchHeaders = {
+export const BatchHeaderDefaults: Readonly<BatchHeaders> = {
   recordTypeCode: {
     name: 'Record Type Code',
     width: 1,
@@ -120,5 +120,3 @@ export const header: BatchHeaders = {
     value: 0
   }
 };
-
-module.exports = { header };

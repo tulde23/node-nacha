@@ -2,7 +2,7 @@ import { formatDateToYYMMDD, formatTime } from '../utils';
 import { FileHeaders } from './FileTypes.js';
 
 // The date/time defaults are dynamic, so always create a new object
-const fileHead = (): FileHeaders => {
+const fileHead = (): Readonly<FileHeaders> => {
   return {
     recordTypeCode: {
       name: 'Record Type Code',
@@ -125,5 +125,4 @@ const fileHead = (): FileHeaders => {
   };
 };
 
-export const fileHeaders = fileHead();
-module.exports = { fileHeaders };
+export const FileHeaderDefaults = fileHead();

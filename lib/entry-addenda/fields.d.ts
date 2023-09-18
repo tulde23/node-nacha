@@ -1,2 +1,2 @@
 import { EntryAddendaFields } from './entryAddendaTypes.js';
-export declare const fields: Partial<EntryAddendaFields>;
+export declare const AddendaFieldDefaults: Readonly<Partial<EntryAddendaFields>>;

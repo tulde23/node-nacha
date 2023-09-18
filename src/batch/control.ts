@@ -1,6 +1,6 @@
 import { BatchControls } from './batchTypes.js';
 
-export const control: BatchControls = {
+export const BatchControlDefaults: Readonly<BatchControls> = {
   recordTypeCode: {
     name: 'Record Type Code',
     width: 1,
@@ -102,5 +102,3 @@ export const control: BatchControls = {
     value: 8
   }
 };
-
-module.exports = { control };

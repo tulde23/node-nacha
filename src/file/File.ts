@@ -4,8 +4,8 @@ import { highLevelFileOverrides } from '../overrides.js';
 import { computeCheckDigit, generateString, getNextMultiple, getNextMultipleDiff, pad } from '../utils.js';
 import validations from '../validate.js';
 import { FileControls, FileHeaders, FileOptions, HighLevelFileOverrides } from './FileTypes.js';
-import { fileControls as FileControlDefaults } from './control.js';
-import { fileHeaders as FileHeaderDefaults } from './header.js';
+import { FileControlDefaults } from './control.js';
+import { FileHeaderDefaults } from './header.js';
 
 export default class File {
   options: FileOptions;
@@ -209,4 +209,3 @@ export default class File {
     }
   }
 }
-module.exports = File;

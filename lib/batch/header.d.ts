@@ -1,2 +1,2 @@
 import { BatchHeaders } from './batchTypes.js';
-export declare const header: BatchHeaders;
+export declare const BatchHeaderDefaults: Readonly<BatchHeaders>;

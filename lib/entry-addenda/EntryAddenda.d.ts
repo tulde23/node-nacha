@@ -1,6 +1,5 @@
-import { EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entryAddendaTypes.js';
+import { EntryAddendaFields, EntryAddendaOptions } from './entryAddendaTypes.js';
 export default class EntryAddenda {
-    overrides: HighLevelAddendaFieldOverrides[];
     fields: EntryAddendaFields;
     debug: boolean;
     /**

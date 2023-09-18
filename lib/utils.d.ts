@@ -3,6 +3,7 @@ import type { BatchControls, BatchHeaders, HighLevelControlOverrides, HighLevelH
 import { EntryAddendaFields, HighLevelAddendaFieldOverrides } from './entry-addenda/entryAddendaTypes.js';
 import type { EntryFields, HighLevelFieldOverrides } from './entry/entryTypes.js';
 import { FileControls, FileHeaders } from './file/FileTypes.js';
+export declare function deepMerge<Target extends Record<string, unknown> = Record<string, unknown>>(target: Target, ...sources: Array<Record<string, unknown>>): Target;
 export declare function addNumericalString(valueStringOne: NumericalString, valueStringTwo: NumericalString): NumericalString;
 export declare function pad<Text extends string | number = string, padEnd extends boolean = true, Char extends string = ' '>(str: Text, width: number, padRight?: padEnd, padChar?: Char): string;
 export declare function computeCheckDigit(routing: `${number}` | number): `${number}`;

@@ -4,8 +4,8 @@ import { highLevelControlOverrides, highLevelHeaderOverrides } from '../override
 import { computeCheckDigit, formatDateToYYMMDD, generateString, parseYYMMDD } from '../utils.js';
 import validations from '../validate.js';
 import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from './batchTypes.js';
-import { control } from './control.js';
-import { header } from './header.js';
+import { BatchControlDefaults } from './control.js';
+import { BatchHeaderDefaults } from './header.js';
 
 export default class Batch {
   options: BatchOptions
@@ -24,12 +24,12 @@ export default class Batch {
 
     // Allow the batch header/control defaults to be override if provided
     this.header = options.header
-      ? { ...options.header, ...header }
-      : { ...header };
+      ? { ...BatchHeaderDefaults, ...options.header }
+      : { ...BatchHeaderDefaults };
 
     this.control = options.control
-      ? { ...options.control, ...control }
-      : { ...control };
+      ? { ...BatchControlDefaults, ...options.control }
+      : { ...BatchControlDefaults };
 
     this.overrides.header.forEach((field) => {
       if (this.options[field]) this.set(field, this.options[field] as NonNullable<typeof this.options[typeof field]>);
@@ -208,4 +208,3 @@ export default class Batch {
     }
   }
 }
-module.exports = Batch;

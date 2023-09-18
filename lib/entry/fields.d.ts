@@ -1,2 +1,2 @@
 import { EntryFields } from './entryTypes.js';
-export declare const fields: EntryFields;
+export declare const EntryFieldDefaults: Readonly<EntryFields>;

@@ -5,7 +5,24 @@ import type { EntryFieldKeys, EntryFields, EntryOptions, HighLevelFieldOverrides
 import nACHError from './error';
 import { FileControls, FileHeaders } from './file/FileTypes.js';
 import { highLevelControlOverrideSet, highLevelHeaderOverrideSet } from './overrides.js';
-let counter = 0;
+
+export function deepMerge<Target extends Record<string, unknown> = Record<string, unknown>>(target: Target, ...sources: Array<Record<string, unknown>>): Target {
+  for (const source of sources) {
+    for (const key in source) {
+      if (source.hasOwnProperty(key)) {
+        const sourceValue = source[key];
+        const targetValue = target[key as keyof Target];
+
+        if (sourceValue instanceof Object && targetValue instanceof Object) {
+          target[key as keyof Target] = deepMerge(Object.create(null), targetValue as Record<string, unknown>, sourceValue as Record<string, unknown>) as Target[keyof Target];
+        } else {
+          target[key as keyof Target] = sourceValue as Target[keyof keyof Target];
+        }
+      }
+    }
+  }
+  return target;
+}
 
 export function addNumericalString(valueStringOne: NumericalString, valueStringTwo: NumericalString): NumericalString {
   return valueStringOne + valueStringTwo as NumericalString;
@@ -109,6 +126,7 @@ export function isBatchHeaderOverrides(
   return compareSets(new Set(arg), highLevelHeaderOverrideSet);
 }
 
+let counter = 0;
 export function unique() { return counter++; }
 
 export function getNextMultiple(value: number, multiple: number) {
@@ -173,20 +191,3 @@ export const computeBusinessDay = function(businessDays: number, startingDate?: 
 
   return date;
 };
-
-module.exports = {
-  addNumericalString,
-  isBatchHeaderOverrides,
-  compareSets,
-  pad,
-  unique,
-  testRegex,
-  parseYYMMDD,
-  formatDateToYYMMDD,
-  formatTime,
-  generateString,
-  getNextMultiple,
-  computeCheckDigit,
-  computeBusinessDay,
-  getNextMultipleDiff,
-}

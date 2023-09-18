@@ -6,5 +6,3 @@ export default class nACHError extends Error {
     this.message = errorObj.message || 'Uncaught nACHError';
   }
 }
-
-module.exports = nACHError;
