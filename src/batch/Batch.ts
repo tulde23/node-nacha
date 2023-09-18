@@ -1,22 +1,27 @@
 import { NumericalString } from '../Types.js';
-import achBuilder from '../class/achParser.js';
 import Entry from '../entry/Entry.js';
-import { highLevelHeaderOverrides, highLevelControlOverrides } from '../overrides.js';
+import { highLevelControlOverrides, highLevelHeaderOverrides } from '../overrides.js';
 import { computeCheckDigit, formatDateToYYMMDD, generateString, parseYYMMDD } from '../utils.js';
 import validations from '../validate.js';
-import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions } from './batchTypes.js';
+import { BatchControlFieldWithOptionalValue, BatchControls, BatchHeaders, BatchOptions, HighLevelControlOverrides, HighLevelHeaderOverrides } from './batchTypes.js';
 import { control } from './control.js';
 import { header } from './header.js';
 
-export default class Batch extends achBuilder<'Batch'> {
+export default class Batch {
+  options: BatchOptions
+  overrides: { header: Array<HighLevelHeaderOverrides>, control: Array<HighLevelControlOverrides> }
   header: BatchHeaders;
   control: BatchControls;
   _entries: Array<Entry> = [];
 
+  debug: boolean;
+
   constructor(options: BatchOptions, autoValidate = true, debug = false) {
-    super({ options, name: 'Batch', debug });
+    this.debug = debug;
+    this.options = options;
 
     this.overrides = { header: highLevelHeaderOverrides, control: highLevelControlOverrides };
+
     // Allow the batch header/control defaults to be override if provided
     this.header = options.header
       ? { ...options.header, ...header }
@@ -26,30 +31,13 @@ export default class Batch extends achBuilder<'Batch'> {
       ? { ...options.control, ...control }
       : { ...control };
 
-    const { typeGuards, overrides } = this;
+    this.overrides.header.forEach((field) => {
+      if (this.options[field]) this.set(field, this.options[field] as NonNullable<typeof this.options[typeof field]>);
+    });
 
-    if (('header' in overrides && 'control' in overrides)
-        && ('header' in this && 'control' in this)
-        && typeGuards.isBatchOptions(this.options)
-      ){
-        overrides.header.forEach((field) => {
-          if (this.options[field]) this.set(field, this.options[field] as NonNullable<typeof this.options[typeof field]>);
-        });
-
-        overrides.control.forEach((field) => {
-          if (this.options[field]) this.set(field, this.options[field] as NonNullable<typeof this.options[typeof field]>);
-        });
-      } else {
-        if (this.debug){
-          console.debug('[overrideOptions::Failed Because]', {
-            headerInOverrides: 'header' in overrides,
-            controlInOverrides: 'control' in overrides,
-            headerInThis: 'header' in this,
-            controlInThis: 'control' in this,
-            isBatchOptions: typeGuards.isBatchOptions(this.options),
-          })
-        }
-      }
+    this.overrides.control.forEach((field) => {
+      if (this.options[field]) this.set(field, this.options[field] as NonNullable<typeof this.options[typeof field]>);
+    });
 
     if (autoValidate) {
       // Validate the routing number (ABA) before slicing

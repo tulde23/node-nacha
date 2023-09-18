@@ -1,8 +1,8 @@
 import { CamelToTitleCase, BaseFieldParams, NumericalString } from '../Types.js';
 export type HighLevelFileOverrides = 'immediateDestination' | 'immediateOrigin' | 'fileCreationDate' | 'fileCreationTime' | 'fileIdModifier' | 'immediateDestinationName' | 'immediateOriginName' | 'referenceCode';
 export type FileHeaderKeys = 'recordTypeCode' | 'priorityCode' | 'immediateDestination' | 'immediateOrigin' | 'fileCreationDate' | 'fileCreationTime' | 'fileIdModifier' | 'recordSize' | 'blockingFactor' | 'formatCode' | 'immediateDestinationName' | 'immediateOriginName' | 'referenceCode';
-type FileHeaderKeysWithStringFields = "immediateDestination" | "immediateOrigin" | "fileCreationDate" | "fileCreationTime" | "fileIdModifier" | "immediateDestinationName" | "immediateOriginName" | "referenceCode";
-type FileHeaderKeysWithNumericalStringFields = "recordTypeCode" | "priorityCode" | "recordSize" | "blockingFactor" | "formatCode";
+type FileHeaderKeysWithStringFields = 'immediateDestination' | 'immediateOrigin' | 'fileCreationDate' | 'fileCreationTime' | 'fileIdModifier' | 'immediateDestinationName' | 'immediateOriginName' | 'referenceCode';
+type FileHeaderKeysWithNumericalStringFields = 'recordTypeCode' | 'priorityCode' | 'recordSize' | 'blockingFactor' | 'formatCode';
 type FileHeaderField<Key extends FileHeaderKeys = FileHeaderKeys> = {
     name: CamelToTitleCase<Key>;
     paddingChar?: string;

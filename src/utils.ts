@@ -109,14 +109,6 @@ export function isBatchHeaderOverrides(
   return compareSets(new Set(arg), highLevelHeaderOverrideSet);
 }
 
-export function isEntryAddendaOptions(arg: BatchOptions|EntryOptions|EntryAddendaOptions): arg is EntryAddendaOptions {
-  if (typeof arg !== 'object') return false;
-  if (Object.keys(arg).length === 0) return false;
-  if ('fields' in arg) return true;
-
-  return false;
-}
-
 export function unique() { return counter++; }
 
 export function getNextMultiple(value: number, multiple: number) {
@@ -185,7 +177,6 @@ export const computeBusinessDay = function(businessDays: number, startingDate?: 
 module.exports = {
   addNumericalString,
   isBatchHeaderOverrides,
-  isEntryAddendaOptions,
   compareSets,
   pad,
   unique,

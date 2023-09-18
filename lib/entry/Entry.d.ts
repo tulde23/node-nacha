@@ -1,15 +1,29 @@
-import achBuilder from '../class/achParser.js';
 import EntryAddenda from '../entry-addenda/EntryAddenda.js';
-import { EntryFields, EntryOptions } from './entryTypes.js';
-export default class Entry extends achBuilder<'Entry'> {
+import { EntryFields, EntryOptions, HighLevelFieldOverrides } from './entryTypes.js';
+/**
+ * @class Entry
+ * @description Entry class that will be used to create Entry objects
+ * @param {EntryOptions} options - required
+ * @param {boolean} autoValidate - optional / defaults to true
+ * @param {boolean} debug - optional / defaults to false
+ */
+export default class Entry {
+    overrides: HighLevelFieldOverrides[];
+    debug: boolean;
     fields: EntryFields;
-    _addendas: Array<EntryAddenda>;
+    addendas: Array<EntryAddenda>;
+    /**
+     * @param {EntryOptions} options - required
+     * @param {boolean} autoValidate - optional / defaults to true
+     * @param {boolean} debug - optional / defaults to false
+     * @returns {Entry}
+     */
     constructor(options: EntryOptions, autoValidate?: boolean, debug?: boolean);
     addAddenda(entryAddenda: EntryAddenda): void;
     getAddendas(): EntryAddenda[];
     getRecordCount(): number;
     _validate(): void;
-    generateString(): string;
+    generateString(): Promise<string>;
     get<Key extends keyof EntryFields = keyof EntryFields>(field: Key): this['fields'][Key]['value'];
     set<Key extends keyof EntryFields = keyof EntryFields>(field: Key, value: typeof this['fields'][Key]['value']): void;
 }

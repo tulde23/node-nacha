@@ -11,7 +11,7 @@ module.exports = {
     '@getify/proper-ternary',
   ],
   parserOptions: {
-    project: './tsconfig.json',
+    project: ['./tsconfig.json', './tsconfig.test.json'],
     tsconfigRootDir: __dirname,
   },
   root: true,

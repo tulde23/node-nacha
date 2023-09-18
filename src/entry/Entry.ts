@@ -1,18 +1,24 @@
 import { NumericalString } from '../Types.js';
-import achBuilder from '../class/achParser.js';
 import EntryAddenda from '../entry-addenda/EntryAddenda.js';
 import { highLevelFieldOverrides } from '../overrides.js';
 import { addNumericalString, computeCheckDigit, generateString } from '../utils.js';
 import validations from '../validate.js';
-import { EntryFields, EntryOptions } from './entryTypes.js';
-import { fields } from './fields.js';
+import { EntryFields, EntryOptions, HighLevelFieldOverrides } from './entryTypes.js';
+import { fields as fieldDefaults } from './fields.js';
 
 /**
  * @class Entry
+ * @description Entry class that will be used to create Entry objects
+ * @param {EntryOptions} options - required
+ * @param {boolean} autoValidate - optional / defaults to true
+ * @param {boolean} debug - optional / defaults to false
  */
-export default class Entry extends achBuilder<'Entry'>{
-  fields!: EntryFields;
-  _addendas: Array<EntryAddenda> = [];
+export default class Entry {
+  public overrides = highLevelFieldOverrides;
+  public debug: boolean;
+
+  public fields: EntryFields;
+  public addendas: Array<EntryAddenda> = [];
 
   /**
    * @param {EntryOptions} options - required
@@ -21,49 +27,35 @@ export default class Entry extends achBuilder<'Entry'>{
    * @returns {Entry}
    */
   constructor(options: EntryOptions, autoValidate: boolean = true, debug: boolean = false) {
-    super({ options: options, name: 'Entry', debug });
+    this.debug = debug;
 
-    this.overrides = highLevelFieldOverrides;
-    this.fields = options.fields
-      ? { ...options.fields, ...fields }
-      : fields;
+    if (options.fields){
+      this.fields = { ...fieldDefaults, ...options.fields };
+    } else {
+      this.fields = { ...fieldDefaults } as EntryFields;
+    }
 
-    const { typeGuards, overrides } = this;
+    this.overrides.forEach((field) => {
+      if (field in options){
+        const value = options[field];
 
-    if ('fields' in this
-      && Array.isArray(overrides)
-      && typeGuards.isEntryOverrides(overrides)
-      && typeGuards.isEntryOptions(this.options)){
-        overrides.forEach((field) => {
-          if (field in this.options){
-            const value = this.options[field];
-            if (value) {
-              if (field === 'transactionCode'
-              || field === 'receivingDFI'
-              || field === 'traceNumber'
-              || field === 'checkDigit'
-              || field === 'DFIAccount'
-              || field === 'idNumber'
-              || field === 'discretionaryData') {
-                this.set(field, value as `${number}`);
-              } else if (field === 'amount') {
-                this.set(field, Number(value));
-              } else {
-                this.set(field, value);
-              }
-            }
+        if (value) {
+          if (field === 'transactionCode'
+          || field === 'receivingDFI'
+          || field === 'traceNumber'
+          || field === 'checkDigit'
+          || field === 'DFIAccount'
+          || field === 'idNumber'
+          || field === 'discretionaryData') {
+            this.set(field, value as `${number}`);
+          } else if (field === 'amount') {
+            this.set(field, Number(value));
+          } else {
+            this.set(field, value);
           }
-        });
-      } else {
-        if (this.debug){
-          console.debug('[overrideOptions::Failed Because]', {
-            fieldsInThis: 'fields' in this,
-            overridesIsArray: Array.isArray(overrides),
-            isEntryOverrides: typeGuards.isEntryOverrides(overrides),
-            isEntryOptions: typeGuards.isEntryOptions(options),
-          })
         }
       }
+    });
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.receivingDFI) {
@@ -99,21 +91,29 @@ export default class Entry extends achBuilder<'Entry'>{
 
   addAddenda(entryAddenda: EntryAddenda) {
     const traceNumber = this.get('traceNumber');
+    console.info('Entry.addAddenda', { traceNumber })
 
     // Add indicator to Entry record
     this.set('addendaId', '1');
+
+    const addendaSequenceNumber = this.addendas.length + 1;
   
     // Set corresponding fields on Addenda
-    entryAddenda.set('addendaSequenceNumber', this._addendas.length + 1);
+    entryAddenda.set('addendaSequenceNumber', addendaSequenceNumber);
     entryAddenda.set('entryDetailSequenceNumber', traceNumber);
-  
+
     // Add the new entryAddenda to the addendas array
-    this._addendas.push(entryAddenda);
+    this.addendas.push(entryAddenda);
+
+    console.info({
+      'Adding -> entryAddenda': entryAddenda.fields['paymentRelatedInformation'],
+      'Current -> addendas': this.addendas?.map(({ fields: f }) => f['paymentRelatedInformation']),
+    })
   }
 
-  getAddendas() { return this._addendas; }
+  getAddendas() { return this.addendas; }
 
-  getRecordCount() { return this._addendas.length + 1; }
+  getRecordCount() { return this.addendas.length + 1; }
 
   _validate() {
     try {
@@ -151,7 +151,8 @@ export default class Entry extends achBuilder<'Entry'>{
   async generateString(){
     const result = [await generateString(this.fields)];
 
-    for await (const addenda of this._addendas) {
+    for await (const addenda of this.addendas) {
+      // console.log({ addenda: addenda.fields })
       result.push(await addenda.generateString());
     }
 
@@ -166,4 +167,3 @@ export default class Entry extends achBuilder<'Entry'>{
     if (this.fields[field]) this.fields[field]['value'] = value;
   }
 }
-module.exports = Entry;

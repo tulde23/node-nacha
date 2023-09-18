@@ -1,19 +1,22 @@
 import { writeFile } from 'fs/promises';
 import Batch from '../batch/Batch.js';
-import achBuilder from '../class/achParser.js';
 import { highLevelFileOverrides } from '../overrides.js';
 import { computeCheckDigit, generateString, getNextMultiple, getNextMultipleDiff, pad } from '../utils.js';
 import validations from '../validate.js';
 import { FileControls, FileHeaders, FileOptions, HighLevelFileOverrides } from './FileTypes.js';
-import { fileControls } from './control.js';
-import { fileHeaders } from './header.js';
+import { fileControls as FileControlDefaults } from './control.js';
+import { fileHeaders as FileHeaderDefaults } from './header.js';
 
-export default class File extends achBuilder<'File'> {
-  overrides: HighLevelFileOverrides[];
+export default class File {
+  options: FileOptions;
+  overrides: Array<HighLevelFileOverrides>;
   header: FileHeaders;
   control: FileControls;
-  private _batches: Array<Batch> = [];
-  private _batchSequenceNumber = 0;
+
+  private batches: Array<Batch> = [];
+  private batchSequenceNumber = 0;
+
+  debug: boolean;
 
   /**
    * 
@@ -22,35 +25,31 @@ export default class File extends achBuilder<'File'> {
    * @param {boolean} debug
    */
   constructor(options: FileOptions, autoValidate: boolean = true, debug: boolean = false) {
-    super({ options, name: 'File', debug });
+    this.debug = debug;
+    this.options = options;
 
     this.overrides = highLevelFileOverrides;
 
     this.header = options.header
-      ? { ...options.header, ...fileHeaders }
-      : { ...fileHeaders };
+      ? { ...FileHeaderDefaults, ...options.header }
+      : { ...FileHeaderDefaults };
     this.control = options.control
-      ? { ...options.control, ...fileControls }
-      : { ...fileControls };
+      ? { ...FileControlDefaults, ...options.control }
+      : { ...FileControlDefaults };
 
-    if (('header' in this && 'control' in this)
-        && this.typeGuards.isFileOverrides(this.overrides)
-        && this.typeGuards.isFileOptions(this.options)
-      ){
-        this.overrides.forEach((field) => {
-          if (field in this.options && this.options[field] !== undefined){
-            const value = this.options[field];
-            if (value !== undefined) this.set(field, value);
-          }
-        });
+    this.overrides.forEach((field) => {
+      if (field in this.options && this.options[field] !== undefined){
+        const value = this.options[field];
+        if (value !== undefined) this.set(field, value);
       }
+    });
 
     // This is done to make sure we have a 9-digit routing number
     if (options.immediateDestination) {
       this.header.immediateDestination.value = computeCheckDigit(options.immediateDestination);
     }
 
-    this._batchSequenceNumber = Number(options.batchSequenceNumber) || 0
+    this.batchSequenceNumber = Number(options.batchSequenceNumber) || 0
 
     if (autoValidate) this.validate();
   }
@@ -73,17 +72,17 @@ export default class File extends achBuilder<'File'> {
 
   addBatch(batch: Batch) {
     // Set the batch number on the header and control records
-    batch.header.batchNumber.value = this._batchSequenceNumber
-    batch.control.batchNumber.value = this._batchSequenceNumber
+    batch.header.batchNumber.value = this.batchSequenceNumber
+    batch.control.batchNumber.value = this.batchSequenceNumber
 
     // Increment the batchSequenceNumber
-    this._batchSequenceNumber++
+    this.batchSequenceNumber++
 
     // Add the batch to the file
-    this._batches.push(batch)
+    this.batches.push(batch)
   }
 
-  getBatches() { return this._batches; }
+  getBatches() { return this.batches; }
 
   generatePaddedRows(rows: number): string {
     let paddedRows = '';
@@ -108,7 +107,7 @@ export default class File extends achBuilder<'File'> {
     let totalDebit = 0;
     let totalCredit = 0;
 
-    for await (const batch of this._batches) {
+    for await (const batch of this.batches) {
       totalDebit += batch.control.totalDebit.value;
       totalCredit += batch.control.totalCredit.value;
   
