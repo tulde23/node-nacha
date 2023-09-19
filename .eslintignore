@@ -6,4 +6,3 @@ tsconfig.json
 tsconfig.base.json
 tsconfig.test.json
 lib/
-index.js
