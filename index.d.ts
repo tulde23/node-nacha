@@ -13,13 +13,4 @@ export import BatchTypes = BatchTypes;
 export import EntryTypes = EntryTypes;
 export import EntryAddendaTypes = EntryAddendaTypes;
 export import FileTypes = FileTypes;
-declare const _default: {
-    Entry: typeof Entry;
-    EntryAddenda: typeof EntryAddenda;
-    Batch: typeof Batch;
-    File: typeof File;
-    NACHParser: typeof NACHParser;
-    Utils: typeof Utils;
-    Validate: typeof Validate;
-};
-export default _default;
+export { Entry, EntryAddenda, Batch, File, NACHParser, Utils, Validate };

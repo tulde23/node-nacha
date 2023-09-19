@@ -15,7 +15,7 @@ export import EntryTypes = EntryTypes;
 export import EntryAddendaTypes = EntryAddendaTypes;
 export import FileTypes = FileTypes;
 
-export default {
+export {
   Entry,
   EntryAddenda,
   Batch,
