@@ -9,18 +9,17 @@ import * as BatchTypes from './lib/batch/batchTypes';
 import * as EntryTypes from './lib/entry/entryTypes';
 import * as EntryAddendaTypes from './lib/entry-addenda/entryAddendaTypes';
 import * as FileTypes from './lib/file/FileTypes';
-
 export import BatchTypes = BatchTypes;
 export import EntryTypes = EntryTypes;
 export import EntryAddendaTypes = EntryAddendaTypes;
 export import FileTypes = FileTypes;
-
-export default {
-  Entry,
-  EntryAddenda,
-  Batch,
-  File,
-  NACHParser,
-  Utils,
-  Validate
-}
+declare const _default: {
+    Entry: typeof Entry;
+    EntryAddenda: typeof EntryAddenda;
+    Batch: typeof Batch;
+    File: typeof File;
+    NACHParser: typeof NACHParser;
+    Utils: typeof Utils;
+    Validate: typeof Validate;
+};
+export default _default;
