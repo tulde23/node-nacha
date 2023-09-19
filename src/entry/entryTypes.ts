@@ -20,11 +20,11 @@ export type HighLevelFieldOverrides = 'transactionCode'|'receivingDFI'|'checkDig
 type EntryField<Key extends EntryFieldKeys = EntryFieldKeys> = { name: CamelToTitleCase<Key>, number?: boolean  } & BaseFieldParams;
 
 // Entry Fields
-type EntryFieldWithStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: string; }
-type EntryFieldWithNumberValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: number | '' };
-type EntryFieldWithNumericalStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: NumericalString };
-type EntryFieldWithOptionalValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value?: NumericalString };
-type EntryFieldWithBlank<Key extends EntryFieldKeys = EntryFieldKeys> = EntryFieldWithNumericalStringValue<Key> & { blank: boolean; };
+export type EntryFieldWithStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: string; }
+export type EntryFieldWithNumberValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: number | '' };
+export type EntryFieldWithNumericalStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value: NumericalString };
+export type EntryFieldWithOptionalValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & { value?: NumericalString };
+export type EntryFieldWithBlank<Key extends EntryFieldKeys = EntryFieldKeys> = EntryFieldWithNumericalStringValue<Key> & { blank: boolean; };
 
 // Entry Fields Object
 export type EntryFields = {

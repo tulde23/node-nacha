@@ -1,8 +1,8 @@
 import { NumericalString } from '../Types.js';
 import { highLevelAddendaFieldOverrides } from '../overrides.js';
-import { deepMerge, generateString } from '../utils.js';
+import { generateString } from '../utils.js';
 import validations from '../validate.js';
-import { EntryAddendaFields, EntryAddendaOptions, HighLevelAddendaFieldOverrides } from './entryAddendaTypes.js';
+import { EntryAddendaFields, EntryAddendaOptions } from './entryAddendaTypes.js';
 import { AddendaFieldDefaults } from './fields.js';
 
 export default class EntryAddenda {
@@ -30,22 +30,18 @@ export default class EntryAddenda {
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.returnCode) {
-      // console.info('[Addenda constructor]', { returnCode: options.returnCode })
       this.fields.returnCode.value = options.returnCode.slice(0, this.fields.returnCode.width) as `${number}`;
     }
     
     if (options.paymentRelatedInformation) {
-      // console.info('[Addenda constructor]', { paymentRelatedInformation: options.paymentRelatedInformation })
       this.fields.paymentRelatedInformation.value = options.paymentRelatedInformation.slice(0, this.fields.paymentRelatedInformation.width);
     }
 
     if (options.addendaSequenceNumber) {
-      // console.info('[Addenda constructor]', { addendaSequenceNumber: options.addendaSequenceNumber })
       this.fields.addendaSequenceNumber.value = options.addendaSequenceNumber;
     }
 
     if (options.entryDetailSequenceNumber) {
-      // console.info('[Addenda constructor]', { entryDetailSequenceNumber: options.entryDetailSequenceNumber })
       this.fields.entryDetailSequenceNumber.value = options.entryDetailSequenceNumber.toString().slice(0 - this.fields.entryDetailSequenceNumber.width) as NumericalString; // last n digits. pass 
     }
 
@@ -87,6 +83,7 @@ export default class EntryAddenda {
 
   set<Key extends keyof EntryAddendaFields>(field: Key, value: EntryAddendaFields[Key]['value']) {
     if (this.fields[field]) {
+      if (this.debug) console.log(`[EntryAddenda:set('${field}')]`, { value, field: this.fields[field] });
       if (field === 'entryDetailSequenceNumber') {
         this.fields.entryDetailSequenceNumber['value'] = value.toString().slice(0 - this.fields[field].width) as NumericalString; // pass last n digits
       } else {

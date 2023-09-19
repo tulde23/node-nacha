@@ -100,11 +100,6 @@ export default class Entry {
 
     // Add the new entryAddenda to the addendas array
     this.addendas.push(entryAddenda);
-
-    console.info({
-      'Adding -> entryAddenda': entryAddenda.fields['paymentRelatedInformation'],
-      'Current -> addendas': this.addendas?.map(({ fields: f }) => f['paymentRelatedInformation']),
-    })
   }
 
   getAddendas() { return this.addendas; }
@@ -148,7 +143,6 @@ export default class Entry {
     const result = [await generateString(this.fields)];
 
     for await (const addenda of this.addendas) {
-      // console.log({ addenda: addenda.fields })
       result.push(await addenda.generateString());
     }
 

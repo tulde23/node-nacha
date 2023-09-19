@@ -13,19 +13,19 @@ type EntryField<Key extends EntryFieldKeys = EntryFieldKeys> = {
     name: CamelToTitleCase<Key>;
     number?: boolean;
 } & BaseFieldParams;
-type EntryFieldWithStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & {
+export type EntryFieldWithStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & {
     value: string;
 };
-type EntryFieldWithNumberValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & {
+export type EntryFieldWithNumberValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & {
     value: number | '';
 };
-type EntryFieldWithNumericalStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & {
+export type EntryFieldWithNumericalStringValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & {
     value: NumericalString;
 };
-type EntryFieldWithOptionalValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & {
+export type EntryFieldWithOptionalValue<Key extends EntryFieldKeys = EntryFieldKeys> = EntryField<Key> & {
     value?: NumericalString;
 };
-type EntryFieldWithBlank<Key extends EntryFieldKeys = EntryFieldKeys> = EntryFieldWithNumericalStringValue<Key> & {
+export type EntryFieldWithBlank<Key extends EntryFieldKeys = EntryFieldKeys> = EntryFieldWithNumericalStringValue<Key> & {
     blank: boolean;
 };
 export type EntryFields = {

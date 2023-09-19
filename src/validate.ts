@@ -16,7 +16,7 @@ const alphaRegex = /^[a-zA-Z]+$/;
 // eslint-disable-next-line no-useless-escape
 const alphanumericRegex = /(^[0-9a-zA-Z!"#$%&'()*+,-.\/:;<>=?@\[\]\\^_`{}|~ ]+$)|(^$)/;
 
-export default function validations(classDefinition: File|Batch|Entry|EntryAddenda){
+export default function validations(classDefinition: File|Batch|Entry|EntryAddenda|{ debug: boolean }){
   const debug = classDefinition.debug;
 
   return {

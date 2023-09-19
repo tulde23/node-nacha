@@ -1,7 +1,9 @@
 import * as chai from 'chai';
 const expect = chai.expect;
+// @ts-ignore
 import moment from 'moment';
 import { generateString, pad, formatDateToYYMMDD, formatTime, parseYYMMDD } from '../lib/utils.js';
+import { EntryFieldWithStringValue, EntryFields } from '../lib/entry/entryTypes.js';
 
 describe('Utils', function() {
   describe('pad', function() {
@@ -15,16 +17,18 @@ describe('Utils', function() {
   describe('GenerateString', function() {
     it("Test to see if object can be passed", function() {
       expect(() => {
-        generateString({
+        const testObject: Partial<EntryFields> = {
           recordTypeCode: {
             name: 'Record Type Code',
             width: 1,
             position: 1,
             required: true,
-            type: 'numeric',
+            type: 'alphanumeric',
             value: '5'
-          }
-        })
+          } as EntryFieldWithStringValue<'recordTypeCode'>
+        }
+
+        generateString(testObject as EntryFields)
       }).not.to.throw('Not passing object correctly.');
     });
   });

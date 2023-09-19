@@ -7,7 +7,9 @@ import Entry from './entry/Entry.js';
 import { EntryFields } from './entry/entryTypes.js';
 import File from './file/File.js';
 import { FileControls, FileHeaders } from './file/FileTypes.js';
-export default function validations(classDefinition: File | Batch | Entry | EntryAddenda): {
+export default function validations(classDefinition: File | Batch | Entry | EntryAddenda | {
+    debug: boolean;
+}): {
     validateRequiredFields: (object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls | FileHeaders | FileControls) => boolean;
     validateRoutingNumber: (routing: NumericalString | number) => boolean;
     validateLengths: (object: EntryAddendaFields | EntryFields | BatchHeaders | BatchControls | FileHeaders | FileControls) => boolean;

@@ -4,24 +4,24 @@ import EntryAddenda from '../lib/entry-addenda/EntryAddenda.js';
 const expect = chai.expect;
 
 describe('Entry', function() {
-  // describe('Create Entry', () => {
-  //   it('should create an entry successfully', async() => {
-  //     const entry = new Entry({
-  //       receivingDFI: '081000210',
-  //       DFIAccount: '12345678901234567',
-  //       amount: '3521',
-  //       transactionCode: '22',
-  //       idNumber: 'RAj##23920rjf31',
-  //       individualName: 'Glen Selle',
-  //       discretionaryData: 'A1'
-  //     }, true, true);
+  describe('Create Entry', () => {
+    it('should create an entry successfully', async() => {
+      const entry = new Entry({
+        receivingDFI: '081000210',
+        DFIAccount: '12345678901234567',
+        amount: '3521',
+        transactionCode: '22',
+        idNumber: 'RAj##23920rjf31',
+        individualName: 'Glen Selle',
+        discretionaryData: 'A1'
+      });
 
-  //     console.log('[EntryTest::entry.generateString] \r\n', await entry.generateString());
+      console.log('[EntryTest::entry.generateString] \r\n', await entry.generateString());
 
-  //     expect(entry).to.not.equal(undefined);
-  //     expect(entry).to.be.an.instanceof(Entry);
-  //   });
-  // });
+      expect(entry).to.not.equal(undefined);
+      expect(entry).to.be.an.instanceof(Entry);
+    });
+  });
 
   describe('Create Entry with addenda', function() {
     it('should create an entry with an addenda successfully', async() => {
@@ -34,7 +34,7 @@ describe('Entry', function() {
         individualName: 'Glen Selle',
         discretionaryData: 'A1',
         traceNumber: '000000001234567'
-      }, true, true);
+      });
 
       expect(entry.getRecordCount(), '[Entry:getRecordCount()]').to.equal(1);
 

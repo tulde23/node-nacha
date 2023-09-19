@@ -152,9 +152,11 @@ export default class Batch {
   }
 
   async generateString() {
-    const headerString = await this.generateHeader();
-    const entriesString = await this.generateEntries();
-    const controlString = await this.generateControl();
+    const [headerString, entriesString, controlString] = await Promise.all([
+      this.generateHeader(),
+      this.generateEntries(),
+      this.generateControl()
+    ]);
   
     return `${headerString}\r\n${entriesString}${controlString}`;
   }
@@ -176,11 +178,15 @@ export default class Batch {
         : never {
     // If the header has the field, return the value
     if (field in this.header && this.isAHeaderField(field)){
+      if (this.debug) console.log(`[Batch:get('${field}')]`, { value: this.header[field]['value'], field: this.header[field] });
       return this.header[field]['value'] as Field extends keyof BatchHeaders ? typeof this.header[Field]['value'] : never;
     }
 
     // If the control has the field, return the value
-    if (field in this.control && this.isAControlField(field)) return this.control[field]['value'];
+    if (field in this.control && this.isAControlField(field)){
+      if (this.debug) console.log(`[Batch:get('${field}')]`, { value: this.control[field]['value'], field: this.control[field] });
+      return this.control[field]['value'];
+    }
 
     throw new Error(`Field ${field} not found in Batch header or control.`);
   }
@@ -195,6 +201,7 @@ export default class Batch {
   ) {
     // If the header has the field, set the value
     if (field in this.header && this.isAHeaderField(field)) {
+      if (this.debug) console.log(`[Batch:set('${field}')]`, { value, field: this.header[field] });
       if (field === 'serviceClassCode'){
         this.header.serviceClassCode.value = value as `${number}`
       } else {
@@ -204,6 +211,7 @@ export default class Batch {
 
     // If the control has the field, set the value
     if (field in this.control && this.isAControlField(field)) {
+      if (this.debug) console.log(`[Batch:set('${field}')]`, { value, field: this.control[field] });
       this.control[field satisfies keyof BatchControls]['value'] = value;
     }
   }

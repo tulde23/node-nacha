@@ -8,7 +8,7 @@ describe('Parse', function() {
   describe('Validate', function() {
     it('should parse successfully', async() => {
       try {
-        const file = await NACHParser.parseFile(__dirname + '/nachFiles/nach-valid.txt', true);
+        const file = await NACHParser.parseFile(__dirname + '/nachFiles/nach-valid.txt');
         expect(file).not.equal(null);
         expect(file).not.equal(undefined);
       } catch (error) {
@@ -18,7 +18,7 @@ describe('Parse', function() {
 
     it('should parse Addenda successfully', async() => {
       try {
-        const file = await NACHParser.parseFile(`${__dirname}/nachFiles/nach-valid-addenda.txt`, true);
+        const file = await NACHParser.parseFile(`${__dirname}/nachFiles/nach-valid-addenda.txt`);
 
         expect(file).not.equal(null).and.not.equal(undefined);
 
@@ -37,7 +37,7 @@ describe('Parse', function() {
     });
 
     it('should parse Addenda successfully with promise', (done) => {
-      NACHParser.parseFile(__dirname + '/nachFiles/nach-valid-addenda.txt', true)
+      NACHParser.parseFile(__dirname + '/nachFiles/nach-valid-addenda.txt')
         .then((file) => {
           expect(file).not.equal(null);
           expect(file).not.equal(undefined);
