@@ -1,5 +1,5 @@
 {
-  "name": "nachos",
+  "name": "@assetval/nachos",
   "description": "nACHos is a library for generating ACH files for use within the ACH network, written in typescript, with no dependencies",
   "version": "1.0.0",
   "keywords": [
