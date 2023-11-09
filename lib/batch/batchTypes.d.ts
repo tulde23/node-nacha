@@ -62,8 +62,8 @@ export type BatchControls = {
     [key in BatchControlKeysWithBlankFields]: BatchControlFieldWithBlank<key>;
 };
 export type BatchOptions = {
-    header: BatchHeaders;
-    control: BatchControls;
+    header?: BatchHeaders;
+    control?: BatchControls;
     originatingDFI: NumericalString;
     companyName?: string;
     companyEntryDescription?: string;

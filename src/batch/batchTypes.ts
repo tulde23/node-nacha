@@ -3,17 +3,17 @@ import { CamelToTitleCase, BaseFieldParams, NumericalString } from '../Types.js'
 //=================
 //  HEADER TYPES  |
 //=================
-export type BatchHeaderKeys = 'recordTypeCode'|'serviceClassCode'|'companyName'|'companyDiscretionaryData'|'companyIdentification'|'standardEntryClassCode'
-  | 'companyEntryDescription'|'companyDescriptiveDate'|'effectiveEntryDate'|'settlementDate'|'originatorStatusCode'|'originatingDFI'|'batchNumber';
+export type BatchHeaderKeys = 'recordTypeCode' | 'serviceClassCode' | 'companyName' | 'companyDiscretionaryData' | 'companyIdentification' | 'standardEntryClassCode'
+  | 'companyEntryDescription' | 'companyDescriptiveDate' | 'effectiveEntryDate' | 'settlementDate' | 'originatorStatusCode' | 'originatingDFI' | 'batchNumber';
 
 // Overrides that we will look for in the options object
-export type HighLevelHeaderOverrides = 'serviceClassCode'|'companyDiscretionaryData'|'companyIdentification'|'standardEntryClassCode';
+export type HighLevelHeaderOverrides = 'serviceClassCode' | 'companyDiscretionaryData' | 'companyIdentification' | 'standardEntryClassCode';
 
 // Batch Header Keys with their corresponding value type
-type BatchHeaderKeysWithStringValue = Exclude<BatchHeaderKeys, 'companyDiscretionaryData'|'settlementDate'|'serviceClassCode'|'batchNumber'>;
+type BatchHeaderKeysWithStringValue = Exclude<BatchHeaderKeys, 'companyDiscretionaryData' | 'settlementDate' | 'serviceClassCode' | 'batchNumber'>;
 type BatchHeaderKeysWithNumericalStringValue = Extract<BatchHeaderKeys, 'serviceClassCode'>;
 type BatchHeaderKeysWithNumberValue = Extract<BatchHeaderKeys, 'batchNumber'>;
-type BatchHeaderKeysWithBlankFields = Extract<BatchHeaderKeys, 'companyDiscretionaryData'|'settlementDate'>;
+type BatchHeaderKeysWithBlankFields = Extract<BatchHeaderKeys, 'companyDiscretionaryData' | 'settlementDate'>;
 
 // Batch Header Field
 type BatchHeaderField<Key extends BatchHeaderKeys = BatchHeaderKeys> = { name: CamelToTitleCase<Key>; } & BaseFieldParams;
@@ -32,26 +32,26 @@ export type BatchHeaders = { [key in BatchHeaderKeysWithStringValue]: BatchHeade
 //==================
 //  CONTROL TYPES  |
 //==================
-export type BatchControlKeys = 'recordTypeCode'|'serviceClassCode'|'addendaCount'|'entryHash'|'totalDebit'|'totalCredit'|'companyIdentification'
-  |'messageAuthenticationCode'|'reserved'|'originatingDFI'|'batchNumber';
+export type BatchControlKeys = 'recordTypeCode' | 'serviceClassCode' | 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit' | 'companyIdentification'
+  | 'messageAuthenticationCode' | 'reserved' | 'originatingDFI' | 'batchNumber';
 
 // Overrides that we will look for in the options object
-export type HighLevelControlOverrides = 'addendaCount'|'entryHash'|'totalDebit'|'totalCredit';
+export type HighLevelControlOverrides = 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit';
 
-type ControlOverrides = Record<HighLevelControlOverrides, number|undefined>;
+type ControlOverrides = Record<HighLevelControlOverrides, number | undefined>;
 
 // Batch Control Keys with their corresponding value type
-type BatchControlKeysWithStringFields = Extract<BatchControlKeys, 'recordTypeCode'|'serviceClassCode'>;
-type BatchControlKeysWithNumberFields = Extract<BatchControlKeys, 'addendaCount'|'entryHash'|'totalDebit'|'totalCredit'|'batchNumber'>;
-type BatchControlKeysWithOptionalValue = Extract<BatchControlKeys, 'companyIdentification'|'originatingDFI'>;
-type BatchControlKeysWithBlankFields = Extract<BatchControlKeys, 'messageAuthenticationCode'|'reserved'>;
+type BatchControlKeysWithStringFields = Extract<BatchControlKeys, 'recordTypeCode' | 'serviceClassCode'>;
+type BatchControlKeysWithNumberFields = Extract<BatchControlKeys, 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit' | 'batchNumber'>;
+type BatchControlKeysWithOptionalValue = Extract<BatchControlKeys, 'companyIdentification' | 'originatingDFI'>;
+type BatchControlKeysWithBlankFields = Extract<BatchControlKeys, 'messageAuthenticationCode' | 'reserved'>;
 
 // Batch Control Fields
 type BatchControlField<Key extends BatchControlKeys = BatchControlKeys> = { name: CamelToTitleCase<Key>, number?: boolean } & BaseFieldParams;
 // Batch Control Fields with their corresponding value type
 export type BatchControlFieldWithString<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value: string; };
 export type BatchControlFieldWithNumber<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value: number; };
-export type BatchControlFieldWithOptionalValue<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value?: number|string };
+export type BatchControlFieldWithOptionalValue<Key extends BatchControlKeys = BatchControlKeys> = BatchControlField<Key> & { value?: number | string };
 export type BatchControlFieldWithBlank<Key extends BatchControlKeys = BatchControlKeys> = BatchControlFieldWithString<Key> & { blank: boolean; };
 
 // Batch Controls
@@ -64,8 +64,8 @@ export type BatchControls = { [key in BatchControlKeysWithStringFields]: BatchCo
 //  BATCH OPTIONS  |
 //==================
 export type BatchOptions = {
-  header: BatchHeaders;
-  control: BatchControls;
+  header?: BatchHeaders;
+  control?: BatchControls;
   originatingDFI: NumericalString;
   companyName?: string;
   companyEntryDescription?: string;
