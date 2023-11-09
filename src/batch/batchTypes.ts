@@ -38,7 +38,7 @@ export type BatchControlKeys = 'recordTypeCode' | 'serviceClassCode' | 'addendaC
 // Overrides that we will look for in the options object
 export type HighLevelControlOverrides = 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit';
 
-type ControlOverrides = Record<HighLevelControlOverrides, number | undefined>;
+type ControlOverrides = Partial<Record<HighLevelControlOverrides, number>>;
 
 // Batch Control Keys with their corresponding value type
 type BatchControlKeysWithStringFields = Extract<BatchControlKeys, 'recordTypeCode' | 'serviceClassCode'>;

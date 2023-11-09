@@ -31,7 +31,7 @@ export type BatchHeaders = {
 };
 export type BatchControlKeys = 'recordTypeCode' | 'serviceClassCode' | 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit' | 'companyIdentification' | 'messageAuthenticationCode' | 'reserved' | 'originatingDFI' | 'batchNumber';
 export type HighLevelControlOverrides = 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit';
-type ControlOverrides = Record<HighLevelControlOverrides, number | undefined>;
+type ControlOverrides = Partial<Record<HighLevelControlOverrides, number>>;
 type BatchControlKeysWithStringFields = Extract<BatchControlKeys, 'recordTypeCode' | 'serviceClassCode'>;
 type BatchControlKeysWithNumberFields = Extract<BatchControlKeys, 'addendaCount' | 'entryHash' | 'totalDebit' | 'totalCredit' | 'batchNumber'>;
 type BatchControlKeysWithOptionalValue = Extract<BatchControlKeys, 'companyIdentification' | 'originatingDFI'>;
