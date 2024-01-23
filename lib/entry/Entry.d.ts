@@ -1,5 +1,5 @@
-import EntryAddenda from '../entry-addenda/EntryAddenda.js';
-import { EntryFields, EntryOptions } from './entryTypes.js';
+import EntryAddenda from "../entry-addenda/EntryAddenda.js";
+import { EntryFields, EntryOptions } from "./entryTypes.js";
 /**
  * @class Entry
  * @description Entry class that will be used to create Entry objects
@@ -23,6 +23,6 @@ export default class Entry {
     getRecordCount(): number;
     _validate(): void;
     generateString(): Promise<string>;
-    get<Key extends keyof EntryFields = keyof EntryFields>(field: Key): this['fields'][Key]['value'];
-    set<Key extends keyof EntryFields = keyof EntryFields>(field: Key, value: typeof this['fields'][Key]['value']): void;
+    get<Key extends keyof EntryFields = keyof EntryFields>(field: Key): this["fields"][Key]["value"];
+    set<Key extends keyof EntryFields = keyof EntryFields>(field: Key, value: (typeof this)["fields"][Key]["value"]): void;
 }
